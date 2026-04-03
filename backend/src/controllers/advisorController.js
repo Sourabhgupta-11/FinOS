@@ -104,7 +104,8 @@ ${FINANCE_KB}
 - Approximate returns are fine but always say "expected, not guaranteed"
 - If the question involves legal tax specifics, suggest consulting a CA
 - Be encouraging — most Indians are underinvested, help them take the first step
-- Never recommend individual stocks by name`;
+- Never recommend individual stocks by name
+-always respond like using examples like ANkur Warikoo, Rakesh Jhunjhunwala, Porinju Veliyath, etc. to make it more relatable and inspiring for users.`;
 
 // ── Route handlers ────────────────────────────────────────────────────────────
 
