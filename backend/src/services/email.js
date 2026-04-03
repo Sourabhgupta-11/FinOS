@@ -1,0 +1,139 @@
+const nodemailer = require('nodemailer');
+const logger = require('../utils/logger');
+
+let transporter = null;
+
+function getTransporter() {
+  if (!transporter) {
+    transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || 'smtp.gmail.com',
+      port: parseInt(process.env.SMTP_PORT) || 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS,
+      },
+    });
+  }
+  return transporter;
+}
+
+const APP_URL = process.env.APP_URL || 'http://localhost:5173';
+const FROM = process.env.EMAIL_FROM || 'Financial OS <no-reply@financialos.in>';
+
+async function sendEmail({ to, subject, html, text }) {
+  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+    logger.warn(`Email skipped (no SMTP config): ${subject} → ${to}`);
+    return;
+  }
+  try {
+    const info = await getTransporter().sendMail({ from: FROM, to, subject, html, text });
+    logger.info(`Email sent: ${subject} → ${to} (${info.messageId})`);
+  } catch (err) {
+    logger.error('Email send failed:', err.message);
+    throw err;
+  }
+}
+
+function baseTemplate(title, body) {
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><style>
+  body{font-family:Inter,sans-serif;background:#f9fafb;margin:0;padding:40px 20px}
+  .card{background:#fff;border-radius:16px;max-width:480px;margin:0 auto;padding:40px;border:1px solid #e5e7eb}
+  .logo{font-size:24px;font-weight:700;color:#2563eb;margin-bottom:8px}
+  h2{color:#111827;margin:24px 0 12px}
+  p{color:#6b7280;line-height:1.6;margin:8px 0}
+  .btn{display:inline-block;background:#2563eb;color:#fff;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:600;margin:20px 0}
+  .footer{text-align:center;color:#9ca3af;font-size:12px;margin-top:32px}
+</style></head><body>
+<div class="card">
+  <div class="logo">₹ Financial OS</div>
+  <h2>${title}</h2>
+  ${body}
+  <div class="footer">Financial OS · AI-powered personal finance for India<br/>If you didn't request this, ignore this email.</div>
+</div></body></html>`;
+}
+
+async function sendVerificationEmail(user, token) {
+  const url = `${APP_URL}/verify-email?token=${token}`;
+  await sendEmail({
+    to: user.email,
+    subject: 'Verify your Financial OS account',
+    html: baseTemplate('Verify your email', `
+      <p>Hi ${user.name},</p>
+      <p>Welcome to Financial OS! Click the button below to verify your email and get started.</p>
+      <a href="${url}" class="btn">Verify Email</a>
+      <p>This link expires in 24 hours.</p>
+    `),
+  });
+}
+
+async function sendPasswordResetEmail(user, token) {
+  const url = `${APP_URL}/reset-password?token=${token}`;
+  await sendEmail({
+    to: user.email,
+    subject: 'Reset your Financial OS password',
+    html: baseTemplate('Reset your password', `
+      <p>Hi ${user.name},</p>
+      <p>We received a request to reset your password. Click the button below:</p>
+      <a href="${url}" class="btn">Reset Password</a>
+      <p>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
+    `),
+  });
+}
+
+async function sendSubscriptionConfirmEmail(user, plan) {
+  await sendEmail({
+    to: user.email,
+    subject: '🎉 Welcome to Financial OS Premium!',
+    html: baseTemplate('Premium activated!', `
+      <p>Hi ${user.name},</p>
+      <p>Your <strong>Premium subscription</strong> is now active at ₹199/month.</p>
+      <p>You now have access to:</p>
+      <ul style="color:#6b7280;line-height:2">
+        <li>AI Advisor (unlimited conversations)</li>
+        <li>Decision Simulator</li>
+        <li>Portfolio Tracker</li>
+        <li>Bank Account linking</li>
+        <li>Tax Calculator</li>
+        <li>Budget Manager</li>
+      </ul>
+      <a href="${APP_URL}" class="btn">Open Financial OS</a>
+    `),
+  });
+}
+
+async function sendSIPReminderEmail(user, sipAmount) {
+  await sendEmail({
+    to: user.email,
+    subject: `⏰ SIP Reminder — ₹${sipAmount.toLocaleString('en-IN')} due today`,
+    html: baseTemplate('Your SIP is due today', `
+      <p>Hi ${user.name},</p>
+      <p>This is your monthly SIP reminder. Your scheduled investment of <strong>₹${sipAmount.toLocaleString('en-IN')}</strong> is due today.</p>
+      <p>Consistent SIP investing is the most reliable path to long-term wealth. Don't skip today!</p>
+      <a href="${APP_URL}/allocator" class="btn">View your allocation</a>
+    `),
+  });
+}
+
+async function sendBudgetAlertEmail(user, categoryName, spent, budget, pct) {
+  await sendEmail({
+    to: user.email,
+    subject: `⚠️ Budget alert: ${categoryName} at ${pct}%`,
+    html: baseTemplate(`Budget alert: ${categoryName}`, `
+      <p>Hi ${user.name},</p>
+      <p>You've spent <strong>₹${spent.toLocaleString('en-IN')}</strong> of your ₹${budget.toLocaleString('en-IN')} budget for <strong>${categoryName}</strong> this month.</p>
+      <p>That's <strong>${pct}%</strong> of your budget.</p>
+      <a href="${APP_URL}/expenses" class="btn">Review your expenses</a>
+    `),
+  });
+}
+
+module.exports = {
+  sendEmail,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendSubscriptionConfirmEmail,
+  sendSIPReminderEmail,
+  sendBudgetAlertEmail,
+};

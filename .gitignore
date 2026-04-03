@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.npm
+
+# Environment files
+.env
+.env.local
+.env.production
+backend/.env
+frontend/.env
+
+# Build output
+dist/
+build/
+frontend/dist/
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Terraform state (keep in S3 for teams, never commit)
+infrastructure/terraform/.terraform/
+infrastructure/terraform/terraform.tfstate
+infrastructure/terraform/terraform.tfstate.backup
+infrastructure/terraform/terraform.tfvars
+infrastructure/terraform/.terraform.lock.hcl
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Test coverage
+coverage/
+
+# Docker
+.dockerignore

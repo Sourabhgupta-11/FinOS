@@ -1,0 +1,32 @@
+import axios from 'axios';
+
+const api = axios.create({
+  baseURL: import.meta.env.VITE_API_URL || '/api',
+  timeout: 30000,
+  headers: { 'Content-Type': 'application/json' },
+});
+
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) config.headers.Authorization = `Bearer ${token}`;
+  return config;
+});
+
+api.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      localStorage.removeItem('token');
+      window.location.href = '/login';
+    }
+    return Promise.reject(err);
+  }
+);
+
+export default api;
+
+export const formatINR = (amount) =>
+  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+
+export const formatNumber = (n) =>
+  new Intl.NumberFormat('en-IN').format(Math.round(n));

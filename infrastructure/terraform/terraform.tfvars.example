@@ -1,0 +1,19 @@
+# Copy to terraform.tfvars and fill in real values
+# NEVER commit terraform.tfvars to git
+
+aws_region    = "us-east-1"
+project       = "financialos"
+environment   = "production"
+
+domain_name         = "financialos.in"
+acm_certificate_arn = "arn:aws:acm:us-east-1:123456789:certificate/your-cert-id"
+
+db_password       = "YourSuperSecurePassword123!"
+db_instance_class = "db.t3.micro"
+
+groq_api_key  = "gsk_your_groq_key_here"
+groq_model    = "llama-3.3-70b-versatile"
+jwt_secret        = "your-32-char-random-jwt-secret-here"
+
+backend_desired_count  = 1
+frontend_desired_count = 1

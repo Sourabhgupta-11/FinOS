@@ -1,0 +1,71 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: financialos-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: financialos
+    ports: ["5432:5432"]
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: financialos-redis
+    restart: unless-stopped
+    ports: ["6379:6379"]
+    command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
+    volumes: [redis_data:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      retries: 3
+
+  backend:
+    build: { context: ./backend, dockerfile: Dockerfile }
+    container_name: financialos-api
+    restart: unless-stopped
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis:    { condition: service_healthy }
+    env_file: [./backend/.env]
+    environment:
+      NODE_ENV: development
+      PORT: 3001
+      DATABASE_URL: postgresql://postgres:password@postgres:5432/financialos
+      REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost:5173
+    ports: ["3001:3001"]
+    volumes: [./backend:/app, /app/node_modules]
+
+  frontend:
+    build: { context: ./frontend, dockerfile: Dockerfile.dev }
+    container_name: financialos-web
+    restart: unless-stopped
+    depends_on: [backend]
+    environment:
+      VITE_API_URL: http://localhost:3001/api
+    ports: ["5173:5173"]
+    volumes: [./frontend:/app, /app/node_modules]
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: financialos-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@financialos.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports: ["5050:80"]
+    depends_on: [postgres]
+
+volumes:
+  postgres_data:
+  redis_data:
