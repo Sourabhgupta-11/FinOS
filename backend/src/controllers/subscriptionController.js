@@ -9,22 +9,45 @@ async function getSubscription(req, res, next) {
       'SELECT * FROM subscriptions WHERE user_id = $1',
       [req.user.id]
     );
-    res.json(rows[0] || { plan: 'free', status: 'active' });
-  } catch (err) { next(err); }
+    // Ensure row exists
+    if (!rows[0]) {
+      await query(
+        'INSERT INTO subscriptions (user_id, plan, status) VALUES ($1,$2,$3) ON CONFLICT (user_id) DO NOTHING',
+        [req.user.id, 'free', 'active']
+      );
+      return res.json({ plan: 'free', status: 'active' });
+    }
+    res.json(rows[0]);
+  } catch (err) {
+    if (err.code === '42P01') return res.json({ plan: 'free', status: 'active' });
+    next(err);
+  }
 }
 
 async function createSubscription(req, res, next) {
   try {
-    if (!process.env.RAZORPAY_KEY_ID) {
-      return res.status(503).json({ error: 'Payment gateway not configured' });
+    const { planType = 'premium' } = req.body; // 'pro' or 'premium'
+    const planId = planType === 'pro'
+      ? process.env.RAZORPAY_PRO_PLAN_ID
+      : process.env.RAZORPAY_PREMIUM_PLAN_ID;
+
+    if (!process.env.RAZORPAY_KEY_ID || !planId) {
+      // Demo mode — activate plan directly for local dev
+      await query(
+        `INSERT INTO subscriptions (user_id, plan, status, current_period_end)
+         VALUES ($1,$2,'active', NOW() + INTERVAL '30 days')
+         ON CONFLICT (user_id) DO UPDATE SET plan=$2, status='active',
+         current_period_end=NOW() + INTERVAL '30 days', updated_at=NOW()`,
+        [req.user.id, planType]
+      );
+      return res.json({ demo: true, plan: planType, message: 'Demo mode: plan activated directly' });
     }
 
-    // Create or get Razorpay customer
+    // Get or create Razorpay customer
     let { rows } = await query(
       'SELECT razorpay_customer_id FROM subscriptions WHERE user_id = $1',
       [req.user.id]
     );
-
     let customerId = rows[0]?.razorpay_customer_id;
     if (!customerId) {
       const customer = await razorpayService.createCustomer(
@@ -33,24 +56,29 @@ async function createSubscription(req, res, next) {
       customerId = customer.id;
     }
 
-    const subscription = await razorpayService.createSubscription(customerId);
+    const subscription = await razorpayService.getRazorpay().subscriptions.create({
+      plan_id: planId,
+      customer_id: customerId,
+      quantity: 1,
+      total_count: 120,
+      customer_notify: 1,
+    });
 
-    // Upsert subscription record
     await query(
-      `INSERT INTO subscriptions (user_id, razorpay_subscription_id, razorpay_customer_id, plan, status)
-       VALUES ($1, $2, $3, 'free', 'pending')
+      `INSERT INTO subscriptions (user_id, razorpay_subscription_id, razorpay_customer_id, plan, status, razorpay_plan_type)
+       VALUES ($1,$2,$3,'free','pending',$4)
        ON CONFLICT (user_id) DO UPDATE SET
-         razorpay_subscription_id = EXCLUDED.razorpay_subscription_id,
-         razorpay_customer_id = EXCLUDED.razorpay_customer_id,
-         status = 'pending', updated_at = NOW()`,
-      [req.user.id, subscription.id, customerId]
+         razorpay_subscription_id=$2, razorpay_customer_id=$3,
+         status='pending', razorpay_plan_type=$4, updated_at=NOW()`,
+      [req.user.id, subscription.id, customerId, planType]
     );
 
     res.json({
       subscriptionId: subscription.id,
       keyId: process.env.RAZORPAY_KEY_ID,
-      amount: 19900,
+      amount: planType === 'pro' ? 9900 : 19900,
       currency: 'INR',
+      planType,
     });
   } catch (err) { next(err); }
 }
@@ -58,99 +86,82 @@ async function createSubscription(req, res, next) {
 async function cancelSubscription(req, res, next) {
   try {
     const { rows } = await query(
-      'SELECT razorpay_subscription_id FROM subscriptions WHERE user_id = $1 AND plan = $2',
-      [req.user.id, 'premium']
+      'SELECT razorpay_subscription_id FROM subscriptions WHERE user_id = $1 AND plan != $2',
+      [req.user.id, 'free']
     );
-
-    if (!rows[0]?.razorpay_subscription_id) {
-      return res.status(404).json({ error: 'No active subscription found' });
+    if (rows[0]?.razorpay_subscription_id) {
+      await razorpayService.cancelSubscription(rows[0].razorpay_subscription_id).catch(() => {});
     }
-
-    await razorpayService.cancelSubscription(rows[0].razorpay_subscription_id);
     await query(
-      `UPDATE subscriptions SET cancel_at_period_end = true, updated_at = NOW() WHERE user_id = $1`,
+      `UPDATE subscriptions SET cancel_at_period_end=true, updated_at=NOW() WHERE user_id=$1`,
       [req.user.id]
     );
-
     res.json({ message: 'Subscription will cancel at end of billing period' });
   } catch (err) { next(err); }
 }
 
-// Called by Razorpay webhook
 async function handleWebhook(req, res, next) {
   try {
     const signature = req.headers['x-razorpay-signature'];
-    const body = JSON.stringify(req.body);
+    const body = req.body.toString();
 
     if (!razorpayService.verifyWebhookSignature(body, signature)) {
-      return res.status(400).json({ error: 'Invalid webhook signature' });
+      return res.status(400).json({ error: 'Invalid signature' });
     }
 
-    const { event, payload } = req.body;
-    const eventId = req.body.id;
+    const parsed = JSON.parse(body);
+    const { event, payload } = parsed;
+    const eventId = parsed.id;
 
-    // Idempotency check
     const existing = await query(
       'SELECT id FROM webhook_events WHERE event_id = $1',
       [eventId]
-    );
+    ).catch(() => ({ rows: [] }));
     if (existing.rows[0]) return res.json({ status: 'already_processed' });
 
-    // Save event
     await query(
-      'INSERT INTO webhook_events (provider, event_id, event_type, payload) VALUES ($1,$2,$3,$4)',
-      ['razorpay', eventId, event, req.body]
-    );
+      'INSERT INTO webhook_events (provider, event_id, event_type, payload) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+      ['razorpay', eventId, event, parsed]
+    ).catch(() => {});
 
     const subId = payload.subscription?.entity?.id;
 
     if (event === 'subscription.activated' || event === 'subscription.charged') {
       const sub = payload.subscription.entity;
-      await query(
-        `UPDATE subscriptions SET
-           plan = 'premium', status = 'active',
-           current_period_start = to_timestamp($1),
-           current_period_end = to_timestamp($2),
-           updated_at = NOW()
-         WHERE razorpay_subscription_id = $3`,
-        [sub.current_start, sub.current_end, subId]
-      );
-
-      // Send confirmation email
-      const { rows } = await query(
-        `SELECT u.* FROM users u
-         JOIN subscriptions s ON s.user_id = u.id
-         WHERE s.razorpay_subscription_id = $1`,
+      const { rows: subRows } = await query(
+        'SELECT razorpay_plan_type FROM subscriptions WHERE razorpay_subscription_id = $1',
         [subId]
       );
-      if (rows[0]) {
-        await emailService.sendSubscriptionConfirmEmail(rows[0], 'premium').catch(() => {});
+      const planType = subRows[0]?.razorpay_plan_type || 'premium';
+
+      await query(
+        `UPDATE subscriptions SET plan=$1, status='active',
+           current_period_start=to_timestamp($2), current_period_end=to_timestamp($3), updated_at=NOW()
+         WHERE razorpay_subscription_id=$4`,
+        [planType, sub.current_start, sub.current_end, subId]
+      );
+
+      const { rows: userRows } = await query(
+        `SELECT u.* FROM users u JOIN subscriptions s ON s.user_id=u.id WHERE s.razorpay_subscription_id=$1`,
+        [subId]
+      );
+      if (userRows[0]) {
+        emailService.sendSubscriptionConfirmEmail(userRows[0], planType).catch(() => {});
       }
-
-      logger.info(`Subscription activated: ${subId}`);
     }
 
-    if (event === 'subscription.cancelled' || event === 'subscription.completed') {
+    if (['subscription.cancelled','subscription.completed','subscription.halted'].includes(event)) {
+      const newStatus = event === 'subscription.halted' ? 'expired' : 'cancelled';
       await query(
-        `UPDATE subscriptions SET plan = 'free', status = 'cancelled', updated_at = NOW()
-         WHERE razorpay_subscription_id = $1`,
-        [subId]
-      );
-      logger.info(`Subscription cancelled: ${subId}`);
-    }
-
-    if (event === 'subscription.halted') {
-      await query(
-        `UPDATE subscriptions SET status = 'expired', updated_at = NOW()
-         WHERE razorpay_subscription_id = $1`,
-        [subId]
+        `UPDATE subscriptions SET plan='free', status=$1, updated_at=NOW() WHERE razorpay_subscription_id=$2`,
+        [newStatus, subId]
       );
     }
 
     await query(
-      'UPDATE webhook_events SET processed = true, processed_at = NOW() WHERE event_id = $1',
+      'UPDATE webhook_events SET processed=true, processed_at=NOW() WHERE event_id=$1',
       [eventId]
-    );
+    ).catch(() => {});
 
     res.json({ status: 'ok' });
   } catch (err) { next(err); }

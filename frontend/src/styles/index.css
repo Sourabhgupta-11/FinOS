@@ -4,42 +4,78 @@
 
 @layer base {
   * { box-sizing: border-box; }
+
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased;
     font-family: 'Inter', system-ui, sans-serif;
+    transition: background-color 0.2s, color 0.2s;
   }
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { @apply bg-transparent; }
-  ::-webkit-scrollbar-thumb { @apply bg-gray-300 rounded-full; }
+  ::-webkit-scrollbar-thumb { @apply bg-gray-200 dark:bg-gray-700 rounded-full; }
 }
 
 @layer components {
+  /* Card */
   .card {
-    @apply bg-white border border-gray-200 rounded-xl p-5 shadow-sm;
+    @apply bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800
+           rounded-xl p-5 shadow-sm;
   }
+
+  /* Buttons */
   .btn-primary {
-    @apply bg-blue-600 text-white font-medium px-4 py-2.5 rounded-lg hover:bg-blue-700
-           transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply bg-blue-600 text-white font-medium px-4 py-2.5 rounded-lg
+           hover:bg-blue-700 active:scale-95
+           transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed
+           cursor-pointer;
   }
   .btn-secondary {
-    @apply bg-white text-gray-700 font-medium px-4 py-2.5 rounded-lg border border-gray-200
-           hover:bg-gray-50 transition-colors duration-150;
+    @apply bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300
+           font-medium px-4 py-2.5 rounded-lg
+           border border-gray-200 dark:border-gray-700
+           hover:bg-gray-50 dark:hover:bg-gray-700
+           transition-all duration-150 cursor-pointer;
   }
+
+  /* Input */
   .input {
-    @apply w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm
+    @apply w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-sm
+           bg-white dark:bg-gray-800
+           text-gray-900 dark:text-gray-100
+           placeholder-gray-400 dark:placeholder-gray-500
            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
-           bg-white text-gray-900 transition-all duration-150;
+           transition-all duration-150;
   }
-  .label { @apply block text-sm font-medium text-gray-600 mb-1.5; }
-  .badge-success { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800; }
-  .badge-warning { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800; }
-  .badge-danger  { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800; }
-  .badge-info    { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800; }
+
+  /* Label */
+  .label { @apply block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1.5; }
+
+  /* Badges */
+  .badge-success {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+           bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300;
+  }
+  .badge-warning {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+           bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300;
+  }
+  .badge-danger {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+           bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300;
+  }
+  .badge-info {
+    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
+           bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300;
+  }
 }
 
-.chat-message-enter { animation: slideUp 0.2s ease-out; }
+/* Animations */
+.chat-message-enter {
+  animation: slideUp 0.18s ease-out;
+}
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 

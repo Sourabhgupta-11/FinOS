@@ -17,48 +17,62 @@ const taxRoutes          = require('./routes/tax');
 const bankRoutes         = require('./routes/bank');
 const notifRoutes        = require('./routes/notifications');
 
-const { errorHandler }   = require('./middleware/errorHandler');
-const { authenticate }   = require('./middleware/auth');
-const { requirePremium } = require('./middleware/requirePremium');
-const logger             = require('./utils/logger');
+const { errorHandler }              = require('./middleware/errorHandler');
+const { authenticate }              = require('./middleware/auth');
+const { requirePlan, requirePremium, requirePro } = require('./middleware/requirePlan');
+const logger                        = require('./utils/logger');
 
 const app = express();
 
 app.use(helmet());
 app.use(cors({ origin: process.env.CORS_ORIGIN || 'http://localhost:5173', credentials: true }));
 app.use(compression());
-app.use(morgan('combined', { stream: { write: msg => logger.info(msg.trim()) }, skip: req => req.path === '/health' }));
+app.use(morgan('combined', {
+  stream: { write: msg => logger.info(msg.trim()) },
+  skip: req => req.path === '/health',
+}));
 
-// Raw body for webhook - must be before express.json()
+// Raw body for webhook before json()
 app.use('/api/subscription/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-const apiLimiter  = rateLimit({ windowMs: 15*60*1000, max: 300 });
-const aiLimiter   = rateLimit({ windowMs: 60*1000, max: 20, message: { error: 'AI rate limit — wait 1 minute' } });
+// Rate limiting
+const apiLimiter  = rateLimit({ windowMs: 15*60*1000, max: 300, standardHeaders: true });
+const aiLimiter   = rateLimit({ windowMs: 60*1000, max: 30, message: { error: 'Too many requests, slow down.' } });
 const authLimiter = rateLimit({ windowMs: 15*60*1000, max: 20, message: { error: 'Too many auth attempts' } });
 app.use('/api/', apiLimiter);
 app.use('/api/advisor/', aiLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-app.get('/health', (req, res) => res.json({ status: 'ok', version: '2.0.0', timestamp: new Date().toISOString() }));
+// Health
+app.get('/health', (req, res) =>
+  res.json({ status: 'ok', version: '2.1.0', timestamp: new Date().toISOString() })
+);
 
-// Public
+// ── Public routes ─────────────────────────────────────────────────────────────
 app.use('/api/auth',         authRoutes);
 app.use('/api/email',        emailRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 
-// Authenticated
-app.use('/api/profile',       authenticate, profileRoutes);
-app.use('/api/finance',       authenticate, financeRoutes);
-app.use('/api/advisor',       authenticate, advisorRoutes);
-app.use('/api/notifications', authenticate, notifRoutes);
+// ── Free + authenticated ──────────────────────────────────────────────────────
+app.use('/api/profile',  authenticate, profileRoutes);
+app.use('/api/finance',  authenticate, financeRoutes);   // history gated inside controller
+app.use('/api/advisor',  authenticate, advisorRoutes);   // rate-limited inside controller
 
-// Premium only
+// ── Pro plan (₹99/mo) ─────────────────────────────────────────────────────────
+app.use('/api/tax',      authenticate, requirePro,     taxRoutes);
+app.use('/api/bank',     authenticate, requirePro,     bankRoutes);
+
+// ── Notifications (Pro+) ──────────────────────────────────────────────────────
+app.use('/api/notifications', authenticate, requirePro, notifRoutes);
+
+// ── Premium plan (₹199/mo) ───────────────────────────────────────────────────
 app.use('/api/portfolio', authenticate, requirePremium, portfolioRoutes);
-app.use('/api/tax',       authenticate, requirePremium, taxRoutes);
-app.use('/api/bank',      authenticate, requirePremium, bankRoutes);
+
+// ── Subscription (authenticated) ──────────────────────────────────────────────
+// webhook is public (handled inside routes/subscription.js before authenticate)
 
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));
 app.use(errorHandler);
