@@ -9,7 +9,7 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 //   llama-3.3-70b-versatile   best quality (recommended)
 //   llama3-8b-8192            fastest response
 //   mixtral-8x7b-32768        32k context window
-const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
+const MODEL = process.env.GROQ_MODEL || 'llama-3.1-8b-instant';
 
 // ── RAG: Indian personal finance knowledge base ───────────────────────────────
 const FINANCE_KB = `
@@ -91,12 +91,13 @@ const FINANCE_KB = `
 - Retirement corpus needed = annual expenses × 25 (4% withdrawal rule)
 `;
 
-const SYSTEM_PROMPT = `You are FinBot, an expert AI financial advisor specialising in Indian personal finance for salaried professionals.
+const SYSTEM_PROMPT = `You are FinBot, an expert AI financial advisor specialising in Indian personal finance for salaried professionals and self-employed individuals.
 
 ${FINANCE_KB}
 
 ## How to respond
 - Use ₹ symbol for all amounts
+-Ensure everyone's risk appetite and think like top investors of global world.
 - Give specific, actionable steps with real product names (PPF, ELSS, Nifty 50, etc.)
 - Keep responses focused — 3–8 sentences or short bullet points
 - Personalise advice if you have the user's salary/age/risk profile
@@ -120,10 +121,15 @@ async function createSession(req, res, next) {
 
 async function chat(req, res, next) {
   try {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
+    // const errors = validationResult(req);
+    // if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
-    const { message, sessionId } = req.body;
+ const message =
+  req.body.message ||
+  req.body.query ||
+  req.body.text;
+
+const { sessionId } = req.body;
     let activeSessionId = sessionId;
 
     // Auto-create session if none provided
