@@ -44,7 +44,7 @@ function NavItem({ item, plan, onClose }) {
       <item.icon size={16} />
       <span className="flex-1">{item.label}</span>
       {locked && <Crown size={11} className="text-amber-400 opacity-70" />}
-    </NavItem>
+    </NavLink>
   );
 }
 
