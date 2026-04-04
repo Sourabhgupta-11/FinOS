@@ -1,166 +1,186 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { usePremium } from '../hooks/usePremium';
 import { useState, useEffect } from 'react';
 import api from '../utils/api';
+import Logo from './Logo';
 import {
   LayoutDashboard, SlidersHorizontal, MessageCircle, FlaskConical,
-  History, LogOut, Menu, TrendingUp, Calculator,
-  CreditCard, Target, Bell, Crown, Landmark, Sun, Moon, IndianRupee
+  History, LogOut, Menu, TrendingUp, Calculator, CreditCard,
+  Target, Bell, Crown, Landmark, Sun, Moon, User, Zap, X
 } from 'lucide-react';
 
-const NAV_ITEMS = [
-  // Free
-  { to: '/',          icon: LayoutDashboard,   label: 'Dashboard',        minPlan: 'free' },
-  { to: '/allocator', icon: SlidersHorizontal, label: 'Salary Allocator', minPlan: 'free' },
-  { to: '/advisor',   icon: MessageCircle,     label: 'AI Advisor',       minPlan: 'free' },
-  { divider: 'Pro' },
-  { to: '/simulator', icon: FlaskConical,      label: 'Simulator',        minPlan: 'pro' },
-  { to: '/expenses',  icon: CreditCard,        label: 'Expenses',         minPlan: 'pro' },
-  { to: '/bank',      icon: Landmark,          label: 'Bank Accounts',    minPlan: 'pro' },
-  { to: '/budgets',   icon: Target,            label: 'Budgets',          minPlan: 'pro' },
-  { to: '/tax',       icon: Calculator,        label: 'Tax Calculator',   minPlan: 'pro' },
-  { divider: 'Premium' },
-  { to: '/portfolio', icon: TrendingUp,        label: 'Portfolio',        minPlan: 'premium' },
-  { divider: 'Account' },
-  { to: '/history',   icon: History,           label: 'History',          minPlan: 'pro' },
+const PLAN_ORDER = { free: 0, pro: 1, premium: 2 };
+
+const NAV = [
+  { to: '/',          icon: LayoutDashboard,   label: 'Dashboard',     min: 'free' },
+  { to: '/allocator', icon: SlidersHorizontal, label: 'Allocator',     min: 'free' },
+  { to: '/advisor',   icon: MessageCircle,     label: 'AI Advisor',    min: 'free' },
+  { section: 'Pro' },
+  { to: '/simulator', icon: FlaskConical,      label: 'Simulator',     min: 'pro' },
+  { to: '/expenses',  icon: CreditCard,        label: 'Expenses',      min: 'pro' },
+  { to: '/bank',      icon: Landmark,          label: 'Bank Accounts', min: 'pro' },
+  { to: '/budgets',   icon: Target,            label: 'Budgets',       min: 'pro' },
+  { to: '/tax',       icon: Calculator,        label: 'Tax Calculator',min: 'pro' },
+  { to: '/history',   icon: History,           label: 'History',       min: 'pro' },
+  { section: 'Premium' },
+  { to: '/portfolio', icon: TrendingUp,        label: 'Portfolio',     min: 'premium' },
 ];
 
-function NavItem({ item, plan, onClose }) {
-  const locked = !['free','pro','premium'].slice(0, ['free','pro','premium'].indexOf(plan) + 1).includes(item.minPlan);
+function ThemeToggle() {
+  const { isDark, toggle } = useTheme();
+  return (
+    <button onClick={toggle} className="btn-ghost relative overflow-hidden w-8 h-8 flex items-center justify-center" title="Toggle theme">
+      <span className={`absolute transition-all duration-300 ${isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'}`}>
+        <Sun size={15} className="text-amber-400" />
+      </span>
+      <span className={`absolute transition-all duration-300 ${!isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 -rotate-90 scale-50'}`}>
+        <Moon size={15} className="text-slate-400" />
+      </span>
+    </button>
+  );
+}
+
+function NavItem({ item, currentPlan, onClose }) {
+  const locked = PLAN_ORDER[currentPlan] < PLAN_ORDER[item.min];
+  const LockIcon = item.min === 'premium' ? Crown : Zap;
   return (
     <NavLink
       to={item.to}
       end={item.to === '/'}
       onClick={onClose}
       className={({ isActive }) =>
-        `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors group
+        `group flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 relative
          ${isActive
-           ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-           : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200'}`
+           ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/30'
+           : locked
+             ? 'text-gray-300 dark:text-gray-600 cursor-default'
+             : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100'}`
       }
     >
-      <item.icon size={16} />
-      <span className="flex-1">{item.label}</span>
-      {locked && <Crown size={11} className="text-amber-400 opacity-70" />}
+      {({ isActive }) => (
+        <>
+          <item.icon size={16} className={isActive ? 'text-white' : ''} />
+          <span className="flex-1">{item.label}</span>
+          {/* Always show lock icon for features above current plan */}
+          {locked && <LockIcon size={11} className="opacity-40" />}
+        </>
+      )}
     </NavLink>
   );
 }
 
 export default function Layout() {
   const { user, logout } = useAuth();
-  const { toggle, isDark } = useTheme();
-  const { plan, isPro, isPremium } = usePremium();
+  const { toggle } = useTheme();
+  const { plan } = usePremium();
   const navigate = useNavigate();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
   const [unread, setUnread] = useState(0);
 
+  useEffect(() => { setOpen(false); }, [location.pathname]);
+
   useEffect(() => {
-    if (isPro) {
+    if (PLAN_ORDER[plan] >= PLAN_ORDER.pro) {
       api.get('/notifications').then(r => setUnread(r.data.unread || 0)).catch(() => {});
     }
-  }, [isPro]);
+  }, [plan]);
 
   const handleLogout = () => { logout(); navigate('/login'); };
+  const initials = user?.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  const planBadge = plan === 'premium' ? { label: 'Premium', cls: 'text-amber-500 dark:text-amber-400' }
+    : plan === 'pro' ? { label: 'Pro', cls: 'text-blue-500 dark:text-blue-400' }
+    : { label: 'Free', cls: 'text-gray-400' };
 
-  const planLabel = isPremium ? '⭐ Premium' : isPro ? '🔵 Pro' : 'Free';
-  const planColor = isPremium ? 'text-amber-500' : isPro ? 'text-blue-500' : 'text-gray-400';
-
-  const Sidebar = () => (
-    <div className="flex flex-col h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800 flex-shrink-0">
-      {/* Logo — FinOS, no subtitle */}
-      <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
+  const SidebarInner = () => (
+    <div className="flex flex-col h-full w-64 bg-white dark:bg-gray-900 border-r border-gray-100 dark:border-gray-800">
+      {/* Logo */}
+      <div className="flex items-center justify-between px-4 py-4 border-b border-gray-100 dark:border-gray-800">
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <IndianRupee size={16} className="text-white" />
+          <Logo size={34} />
+          <div>
+            <div className="font-extrabold text-gray-900 dark:text-white text-lg tracking-tight leading-none">FinOS</div>
+            <div className={`text-xs font-semibold ${planBadge.cls} leading-none mt-0.5`}>{planBadge.label}</div>
           </div>
-          <span className="font-bold text-gray-900 dark:text-white text-base tracking-tight">FinOS</span>
         </div>
-        <button onClick={toggle}
-          className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-          {isDark ? <Sun size={15} /> : <Moon size={15} />}
-        </button>
+        <ThemeToggle />
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map((item, i) => {
-          if (item.divider) return (
-            <div key={i} className="px-3 pt-3 pb-1">
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800" />
-                <span className="text-xs text-gray-300 dark:text-gray-600 font-medium">{item.divider}</span>
-                <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800" />
+      <nav className="flex-1 px-3 py-3 overflow-y-auto space-y-0.5">
+        {NAV.map((item, i) => {
+          if (item.section) {
+            return (
+              <div key={i} className="px-3 pt-4 pb-1.5">
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800" />
+                  <span className="text-[10px] font-bold text-gray-300 dark:text-gray-600 uppercase tracking-widest">
+                    {item.section}
+                  </span>
+                  <div className="flex-1 h-px bg-gray-100 dark:bg-gray-800" />
+                </div>
               </div>
-            </div>
-          );
-          const PLAN_ORDER = { free: 0, pro: 1, premium: 2 };
-          const locked = PLAN_ORDER[plan] < PLAN_ORDER[item.minPlan];
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              end={item.to === '/'}
-              onClick={() => setOpen(false)}
-              className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-                 ${isActive
-                   ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
-                   : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-200'}`
-              }
-            >
-              <item.icon size={16} />
-              <span className="flex-1">{item.label}</span>
-              {locked && <Crown size={11} className="text-amber-400 opacity-60" />}
-            </NavLink>
-          );
+            );
+          }
+          return <NavItem key={item.to} item={item} currentPlan={plan} onClose={() => setOpen(false)} />;
         })}
       </nav>
 
-      {/* Bottom */}
+      {/* Footer */}
       <div className="px-3 pb-3 pt-2 border-t border-gray-100 dark:border-gray-800 space-y-1">
-        {!isPremium && (
+        {plan !== 'premium' && (
           <NavLink to="/subscription" onClick={() => setOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors
+              `flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-semibold transition-all
                ${isActive
-                 ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                 : 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30'}`
+                 ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white'
+                 : 'bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 text-amber-700 dark:text-amber-400 hover:from-amber-100 hover:to-orange-100 dark:hover:from-amber-900/30 dark:hover:to-orange-900/30'}`
             }>
             <Crown size={14} />
-            {isPro ? 'Upgrade to Premium' : 'Upgrade Plan'}
+            {plan === 'pro' ? 'Upgrade to Premium' : 'Upgrade Plan'}
           </NavLink>
         )}
 
-        {isPro && (
+        {PLAN_ORDER[plan] >= PLAN_ORDER.pro && (
           <NavLink to="/notifications" onClick={() => setOpen(false)}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors
-               ${isActive ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800'}`
+              `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all
+               ${isActive ? 'bg-blue-600 text-white' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'}`
             }>
-            <Bell size={15} />
-            <span className="flex-1">Notifications</span>
-            {unread > 0 && (
-              <span className="bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                {unread > 9 ? '9+' : unread}
-              </span>
+            {({ isActive }) => (
+              <>
+                <Bell size={15} className={isActive ? 'text-white' : ''} />
+                <span className="flex-1">Notifications</span>
+                {unread > 0 && (
+                  <span className="bg-red-500 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {unread > 9 ? '9+' : unread}
+                  </span>
+                )}
+              </>
             )}
           </NavLink>
         )}
 
-        {/* User row */}
-        <div className="flex items-center gap-2.5 px-3 py-2">
-          <div className="w-7 h-7 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center text-blue-700 dark:text-blue-400 text-xs font-bold flex-shrink-0">
-            {user?.name?.charAt(0).toUpperCase()}
+        {/* Profile */}
+        <NavLink to="/profile" onClick={() => setOpen(false)}
+          className={({ isActive }) =>
+            `flex items-center gap-2.5 px-3 py-2.5 rounded-xl transition-all
+             ${isActive ? 'bg-gray-100 dark:bg-gray-800' : 'hover:bg-gray-50 dark:hover:bg-gray-800/60'}`
+          }>
+          <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+            {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <div className="text-xs font-medium text-gray-900 dark:text-gray-200 truncate">{user?.name}</div>
-            <div className={`text-xs truncate ${planColor}`}>{planLabel}</div>
+            <div className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">{user?.name}</div>
+            <div className="text-xs text-gray-400 dark:text-gray-500 truncate">{user?.email}</div>
           </div>
-        </div>
+          <User size={13} className="text-gray-300 dark:text-gray-600 flex-shrink-0" />
+        </NavLink>
+
         <button onClick={handleLogout}
-          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm text-gray-500 dark:text-gray-400 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 transition-colors">
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm text-gray-400 dark:text-gray-500 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-500 dark:hover:text-red-400 transition-colors">
           <LogOut size={14} />
           Sign out
         </button>
@@ -170,47 +190,40 @@ export default function Layout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
-      {/* Desktop sidebar */}
-      <div className="hidden lg:flex h-full">
-        <Sidebar />
-      </div>
+      <div className="hidden lg:flex h-full"><SidebarInner /></div>
 
-      {/* Mobile overlay */}
       {open && (
         <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div className="fixed inset-0 bg-black/40" onClick={() => setOpen(false)} />
-          <div className="relative z-10 h-full flex"><Sidebar /></div>
+          <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="relative z-10 h-full flex animate-[slideIn_0.2s_ease-out]">
+            <SidebarInner />
+          </div>
         </div>
       )}
 
-      {/* Main content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Mobile header */}
         <div className="lg:hidden flex items-center justify-between px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
-          <button onClick={() => setOpen(true)} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-            <Menu size={20} className="text-gray-600 dark:text-gray-400" />
+          <button onClick={() => setOpen(true)} className="btn-ghost">
+            <Menu size={20} />
           </button>
           <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-blue-600 rounded-md flex items-center justify-center">
-              <IndianRupee size={13} className="text-white" />
-            </div>
-            <span className="font-bold text-sm dark:text-white">FinOS</span>
+            <Logo size={28} />
+            <span className="font-extrabold text-gray-900 dark:text-white">FinOS</span>
           </div>
           <div className="flex items-center gap-1">
-            <button onClick={toggle} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800">
-              {isDark ? <Sun size={16} className="text-gray-400" /> : <Moon size={16} className="text-gray-400" />}
-            </button>
-            {isPro && (
-              <NavLink to="/notifications" className="relative p-1.5">
-                <Bell size={18} className="text-gray-600 dark:text-gray-400" />
-                {unread > 0 && <span className="absolute top-0.5 right-0.5 w-2 h-2 bg-red-500 rounded-full" />}
+            <ThemeToggle />
+            {PLAN_ORDER[plan] >= PLAN_ORDER.pro && (
+              <NavLink to="/notifications" className="relative btn-ghost">
+                <Bell size={18} />
+                {unread > 0 && <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />}
               </NavLink>
             )}
           </div>
         </div>
 
         <main className="flex-1 overflow-y-auto">
-          <div className="max-w-4xl mx-auto px-4 lg:px-8 py-6">
+          <div className="max-w-4xl mx-auto px-4 lg:px-8 py-6 page-enter">
             <Outlet />
           </div>
         </main>

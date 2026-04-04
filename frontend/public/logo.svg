@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" fill="none">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#1d4ed8"/>
+      <stop offset="100%" stop-color="#4f46e5"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0" y1="0" x2="200" y2="200" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.25)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Background rounded square -->
+  <rect width="200" height="200" rx="44" fill="url(#bg)"/>
+  <rect width="200" height="200" rx="44" fill="url(#shine)"/>
+
+  <!-- Subtle grid lines for OS aesthetic -->
+  <line x1="40" y1="0" x2="40" y2="200" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <line x1="100" y1="0" x2="100" y2="200" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <line x1="160" y1="0" x2="160" y2="200" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <line x1="0" y1="60" x2="200" y2="60" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+  <line x1="0" y1="140" x2="200" y2="140" stroke="rgba(255,255,255,0.04)" stroke-width="1"/>
+
+  <!-- ₹ Rupee symbol — custom drawn, bold, centered -->
+  <!-- Top horizontal bar -->
+  <rect x="62" y="56" width="76" height="11" rx="5.5" fill="white"/>
+  <!-- Second horizontal bar -->
+  <rect x="62" y="77" width="76" height="11" rx="5.5" fill="white"/>
+  <!-- Vertical stem -->
+  <rect x="62" y="56" width="12" height="88" rx="6" fill="white"/>
+  <!-- Diagonal slash through bottom right -->
+  <line x1="72" y1="105" x2="126" y2="154" stroke="white" stroke-width="12" stroke-linecap="round"/>
+
+  <!-- "OS" small text underneath - rendered as shapes for scalability -->
+  <rect x="84" y="164" width="32" height="4" rx="2" fill="rgba(255,255,255,0.35)"/>
+</svg>

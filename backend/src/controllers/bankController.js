@@ -25,14 +25,14 @@ async function getAccounts(req, res, next) {
 
 async function addAccount(req, res, next) {
   try {
-    const { accountName, bankName, accountType, accountNumberMasked, balance, creditLimit, color } = req.body;
+    const { accountName, bankName, accountType, accountNumberMasked, ifscCode, balance, creditLimit, color } = req.body;
     const { rows } = await query(
       `INSERT INTO bank_accounts
-         (user_id, account_name, bank_name, account_type, account_number_masked, balance, credit_limit, color, is_manual)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,true)
+         (user_id, account_name, bank_name, account_type, account_number_masked, ifsc_code, balance, credit_limit, color, is_manual)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,true)
        RETURNING *`,
       [req.user.id, accountName, bankName, accountType,
-       accountNumberMasked, balance || 0, creditLimit || null, color || '#3b82f6']
+       accountNumberMasked, ifscCode || null, balance || 0, creditLimit || null, color || '#3b82f6']
     );
     res.status(201).json(rows[0]);
   } catch (err) { next(err); }

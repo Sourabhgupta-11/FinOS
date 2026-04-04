@@ -1,112 +1,66 @@
-# Financial OS 🇮🇳
+# FinOS — AI Personal Finance OS for India
 
-> AI-powered personal finance decision engine for India
+> Your complete financial operating system. Salary allocation, AI advisor, expense tracking, tax calculator, portfolio tracker, and bank linking — all in one app.
 
-## Stack
-- **Frontend**: React 18 + Vite + TailwindCSS + React Router
-- **Backend**: Node.js + Express + PostgreSQL
-- **AI**: Anthropic Claude API (claude-sonnet-4-20250514)
-- **Auth**: JWT + bcrypt
-- **Infra**: AWS ECS Fargate + RDS PostgreSQL + S3 + CloudFront
-- **IaC**: Terraform
-- **CI/CD**: GitHub Actions
+## Tech Stack
 
-## Project Structure
+| Layer | Tech |
+|-------|------|
+| Frontend | React 18 + Vite + TailwindCSS |
+| Backend | Node.js + Express |
+| Database | PostgreSQL 15 |
+| AI | Groq (Llama 3.3 70B) + RAG |
+| Cache | Redis |
+| Payments | Razorpay |
+| Bank Linking | Setu Account Aggregator |
+| Push Notifications | Web Push (VAPID) |
+| Infrastructure | AWS ECS Fargate + RDS + CloudFront |
 
-```
-financial-os/
-├── frontend/          # React Vite app
-├── backend/           # Express API server
-├── infrastructure/    # Terraform + Docker
-├── scripts/           # Helper scripts
-└── docker-compose.yml # Local development
-```
+## Plans
 
-## Quick Start (Local)
+| | Free | Pro ₹99/mo | Premium ₹199/mo |
+|-|------|-----------|----------------|
+| Salary Allocator | ✓ | ✓ | ✓ |
+| AI Advisor | 5 msg/day | 100 msg/day | Unlimited |
+| Health Score | ✓ | ✓ | ✓ |
+| Expense Tracker | ✗ | ✓ | ✓ |
+| Bank Account Linking | ✗ | ✓ | ✓ |
+| Tax Calculator | ✗ | ✓ | ✓ |
+| Budget Manager | ✗ | ✓ | ✓ |
+| Decision Simulator | ✗ | ✓ | ✓ |
+| Allocation History | ✗ | ✓ | ✓ |
+| Portfolio Tracker | ✗ | ✗ | ✓ |
 
-### Prerequisites
-- Node.js 20+
-- Docker + Docker Compose
-- PostgreSQL 15 (or use Docker)
-- Anthropic API Key
+## Quick Start
 
-### 1. Clone & Install
 ```bash
-git clone <repo>
-cd financial-os
-cp .env.example .env   # Fill in your values
+# 1. Clone and configure
+cp backend/.env.example backend/.env
+# Edit backend/.env — add GROQ_API_KEY at minimum
+
+# 2. Run everything
+docker compose up --build
+
+# App:    http://localhost:5173
+# API:    http://localhost:3001
+# pgAdmin: http://localhost:5050
+# Demo login: demo@financialos.in / demo1234
 ```
 
-### 2. Start with Docker Compose
-```bash
-docker-compose up --build
-```
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001
-- PgAdmin: http://localhost:5050
+## Get a Free Groq API Key
 
-### 3. Manual Setup (without Docker)
-```bash
-# Backend
-cd backend
-npm install
-npm run migrate
-npm run dev
-
-# Frontend (new terminal)
-cd frontend
-npm install
-npm run dev
-```
-
-## Environment Variables
-
-### Backend (.env)
-```
-NODE_ENV=development
-PORT=3001
-DATABASE_URL=postgresql://postgres:password@localhost:5432/financialos
-JWT_SECRET=your-super-secret-jwt-key-min-32-chars
-ANTHROPIC_API_KEY=sk-ant-...
-CORS_ORIGIN=http://localhost:5173
-```
-
-### Frontend (.env)
-```
-VITE_API_URL=http://localhost:3001/api
-```
+1. Go to https://console.groq.com
+2. Sign up (free, no credit card)
+3. Create API key
+4. Add to `backend/.env`: `GROQ_API_KEY=gsk_...`
 
 ## AWS Deployment
 
-See [infrastructure/README.md](./infrastructure/README.md) for full AWS deployment guide.
-
 ```bash
 cd infrastructure/terraform
-terraform init
-terraform plan
-terraform apply
+cp terraform.tfvars.example terraform.tfvars
+# Fill in values
+terraform init && terraform apply
 ```
 
-## API Endpoints
-
-### Auth
-- `POST /api/auth/register`
-- `POST /api/auth/login`
-- `GET  /api/auth/me`
-
-### Profile
-- `POST /api/profile`  
-- `GET  /api/profile`
-
-### Finance
-- `POST /api/finance/allocate`
-- `POST /api/finance/simulate`
-- `GET  /api/finance/health-score`
-- `GET  /api/finance/history`
-
-### AI Advisor
-- `POST /api/advisor/chat`
-- `GET  /api/advisor/history`
-
-## License
-MIT
+See `SETUP.md` for complete deployment guide.

@@ -3,15 +3,14 @@ version: '3.9'
 services:
   postgres:
     image: postgres:15-alpine
-    container_name: financialos-db
+    container_name: finos-db
     restart: unless-stopped
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: password
       POSTGRES_DB: financialos
     ports: ["5432:5432"]
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
+    volumes: [postgres_data:/var/lib/postgresql/data]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
       interval: 10s
@@ -20,7 +19,7 @@ services:
 
   redis:
     image: redis:7-alpine
-    container_name: financialos-redis
+    container_name: finos-redis
     restart: unless-stopped
     ports: ["6379:6379"]
     command: redis-server --maxmemory 128mb --maxmemory-policy allkeys-lru
@@ -32,7 +31,7 @@ services:
 
   backend:
     build: { context: ./backend, dockerfile: Dockerfile }
-    container_name: financialos-api
+    container_name: finos-api
     restart: unless-stopped
     depends_on:
       postgres: { condition: service_healthy }
@@ -46,10 +45,11 @@ services:
       CORS_ORIGIN: http://localhost:5173
     ports: ["3001:3001"]
     volumes: [./backend:/app, /app/node_modules]
+    command: sh -c "npm run migrate && npm run seed && npm run dev"
 
   frontend:
     build: { context: ./frontend, dockerfile: Dockerfile.dev }
-    container_name: financialos-web
+    container_name: finos-web
     restart: unless-stopped
     depends_on: [backend]
     environment:
@@ -59,9 +59,9 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4:latest
-    container_name: financialos-pgadmin
+    container_name: finos-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@financialos.com
+      PGADMIN_DEFAULT_EMAIL: admin@finos.in
       PGADMIN_DEFAULT_PASSWORD: admin
     ports: ["5050:80"]
     depends_on: [postgres]

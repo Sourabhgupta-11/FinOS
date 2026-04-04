@@ -26,7 +26,14 @@ api.interceptors.response.use(
 export default api;
 
 export const formatINR = (amount) =>
-  new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+  new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(Math.round(Number(amount) || 0));
 
 export const formatNumber = (n) =>
-  new Intl.NumberFormat('en-IN').format(Math.round(n));
+  new Intl.NumberFormat('en-IN').format(Math.round(Number(n) || 0));
+
+export const formatDate = (d) =>
+  new Date(d).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });

@@ -4,91 +4,149 @@
 
 @layer base {
   * { box-sizing: border-box; }
-
   body {
     @apply bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 antialiased;
     font-family: 'Inter', system-ui, sans-serif;
-    transition: background-color 0.2s, color 0.2s;
   }
-
   ::-webkit-scrollbar { width: 5px; height: 5px; }
   ::-webkit-scrollbar-track { @apply bg-transparent; }
   ::-webkit-scrollbar-thumb { @apply bg-gray-200 dark:bg-gray-700 rounded-full; }
 }
 
 @layer components {
-  /* Card */
   .card {
-    @apply bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800
-           rounded-xl p-5 shadow-sm;
+    @apply bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm;
   }
-
-  /* Buttons */
+  .card-hover {
+    @apply card hover:shadow-md dark:hover:shadow-gray-900/60 hover:-translate-y-0.5 transition-all duration-200;
+  }
   .btn-primary {
-    @apply bg-blue-600 text-white font-medium px-4 py-2.5 rounded-lg
-           hover:bg-blue-700 active:scale-95
-           transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed
-           cursor-pointer;
+    @apply bg-blue-600 text-white font-medium px-4 py-2.5 rounded-xl
+           hover:bg-blue-700 active:scale-95 active:bg-blue-800
+           transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer;
   }
   .btn-secondary {
     @apply bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300
-           font-medium px-4 py-2.5 rounded-lg
+           font-medium px-4 py-2.5 rounded-xl
            border border-gray-200 dark:border-gray-700
-           hover:bg-gray-50 dark:hover:bg-gray-700
+           hover:bg-gray-50 dark:hover:bg-gray-700/80 active:scale-95
            transition-all duration-150 cursor-pointer;
   }
-
-  /* Input */
+  .btn-ghost {
+    @apply text-gray-500 dark:text-gray-400 p-2 rounded-xl
+           hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer;
+  }
   .input {
-    @apply w-full border border-gray-200 dark:border-gray-700 rounded-lg px-3 py-2.5 text-sm
-           bg-white dark:bg-gray-800
+    @apply w-full border border-gray-200 dark:border-gray-700 rounded-xl px-3.5 py-2.5 text-sm
+           bg-white dark:bg-gray-800/80
            text-gray-900 dark:text-gray-100
            placeholder-gray-400 dark:placeholder-gray-500
-           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
+           focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 dark:focus:border-blue-400
            transition-all duration-150;
   }
+  .label { @apply block text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1.5 uppercase tracking-wide; }
+  .badge-success { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300; }
+  .badge-warning { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300; }
+  .badge-danger  { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300; }
+  .badge-info    { @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300; }
 
-  /* Label */
-  .label { @apply block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1.5; }
+  /* Stat card */
+  .stat-card {
+    @apply card flex flex-col gap-1;
+  }
+  .stat-label { @apply text-xs font-medium text-gray-400 dark:text-gray-500; }
+  .stat-value { @apply text-2xl font-bold text-gray-900 dark:text-white tabular-nums; }
+  .stat-sub   { @apply text-xs text-gray-400 dark:text-gray-500; }
 
-  /* Badges */
-  .badge-success {
-    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
-           bg-green-100 dark:bg-green-900/40 text-green-800 dark:text-green-300;
-  }
-  .badge-warning {
-    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
-           bg-yellow-100 dark:bg-yellow-900/40 text-yellow-800 dark:text-yellow-300;
-  }
-  .badge-danger {
-    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
-           bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300;
-  }
-  .badge-info {
-    @apply inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium
-           bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300;
-  }
+  /* Section heading */
+  .section-title { @apply text-sm font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest mb-3; }
 }
 
-/* Animations */
-.chat-message-enter {
-  animation: slideUp 0.18s ease-out;
+/* ── Theme ripple animation ────────────────────────────────────────────── */
+.theme-ripple-anim {
+  animation: rippleExpand 0.55s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
-@keyframes slideUp {
-  from { opacity: 0; transform: translateY(6px); }
+@keyframes rippleExpand {
+  from { opacity: 0.8; transform: scale(0); transform-origin: var(--rx) var(--ry); }
+  to   { opacity: 0;   transform: scale(4); transform-origin: var(--rx) var(--ry); }
+}
+
+/* ── Chat animations ──────────────────────────────────────────────────── */
+.chat-message-enter { animation: msgSlide 0.2s ease-out; }
+@keyframes msgSlide {
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 .typing-dot {
-  animation: typingBounce 1.2s infinite;
+  animation: typingBounce 1.3s infinite;
   display: inline-block;
   border-radius: 50%;
   width: 6px; height: 6px;
   background: currentColor;
+  margin: 0 1px;
 }
-.typing-dot:nth-child(2) { animation-delay: 0.2s; }
-.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+.typing-dot:nth-child(2) { animation-delay: 0.18s; }
+.typing-dot:nth-child(3) { animation-delay: 0.36s; }
 @keyframes typingBounce {
-  0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-  30% { transform: translateY(-6px); opacity: 1; }
+  0%, 55%, 100% { transform: translateY(0); opacity: 0.35; }
+  27%            { transform: translateY(-5px); opacity: 1; }
 }
+
+/* ── Page transition ──────────────────────────────────────────────────── */
+.page-enter { animation: pageFade 0.22s ease-out; }
+@keyframes pageFade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Number counter pulse ────────────────────────────────────────────── */
+@keyframes pulseNum {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.6; }
+}
+.pulsing { animation: pulseNum 1.5s ease-in-out infinite; }
+
+/* ── Glass card ───────────────────────────────────────────────────────── */
+.glass-card {
+  @apply backdrop-blur-sm bg-white/70 dark:bg-gray-900/70 border border-white/20 dark:border-gray-700/30 rounded-2xl shadow-xl;
+}
+
+/* ── Gradient text ────────────────────────────────────────────────────── */
+.gradient-text {
+  @apply bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Progress bar ─────────────────────────────────────────────────────── */
+.progress-bar {
+  @apply h-2 rounded-full bg-gray-100 dark:bg-gray-800 overflow-hidden;
+}
+.progress-fill {
+  @apply h-full rounded-full transition-all duration-700 ease-out;
+}
+
+/* ── Glassmorphism card (login/register) ─────────────────────────────── */
+.glass-card {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 1.25rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0,0,0,0.04);
+}
+.dark .glass-card {
+  background: rgba(17, 24, 39, 0.75);
+  border-color: rgba(255,255,255,0.08);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+
+/* ── Sidebar slide in ────────────────────────────────────────────────── */
+@keyframes slideIn {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+/* ── Loading spinner ──────────────────────────────────────────────────── */
+.border-3 { border-width: 3px; }
