@@ -69,7 +69,7 @@ router.get('/google/callback',
   passport.authenticate('google', { session: false, failureRedirect: '/login?error=google_failed' }),
   (req, res) => {
     const token = generateToken(req.user.id);
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl = process.env.APP_URL || 'http://localhost:5173';
     // Redirect to frontend callback page which saves the token
     res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
   }
