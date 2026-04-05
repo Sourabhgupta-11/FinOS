@@ -29,18 +29,13 @@ export function AuthProvider({ children }) {
     return res.data;
   };
 
- const register = async (name, email, password) => {
-  const res = await api.post('/auth/register', {
-    name,
-    email,
-    password
-  });
+  const register = async (name, email, password) => {
+    const res = await api.post('/auth/register', { name, email, password });
+    localStorage.setItem('token', res.data.token);
+    setUser(res.data.user);
+    return res.data;
+  };
 
-  setUser(res.data.user);
-  localStorage.setItem('token', res.data.token);
-
-  return res.data;
-};
   const logout = () => {
     localStorage.removeItem('token');
     setUser(null);

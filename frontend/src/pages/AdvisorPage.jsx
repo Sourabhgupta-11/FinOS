@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import api from '../utils/api';
-import { Send, Bot, User, Plus, MessageCircle, Crown, AlertTriangle, Info } from 'lucide-react';
+import { Send, Bot, User, Plus, MessageCircle, Crown, Info } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { usePremium } from '../hooks/usePremium';
 
@@ -17,7 +17,7 @@ const QUICK_CHIPS = [
 
 const INITIAL_MSG = {
   role: 'assistant',
-  content: `Namaste! 👋 I'm FinBot, your AI financial advisor.\n\nI can help you with SIPs, mutual funds, tax saving (80C, 80D), emergency funds, insurance, salary planning, and more — all personalised for India.\n\nWhat would you like to know today?\n\n---\n⚠️ *Disclaimer: I am an AI. All information is for educational purposes only. Please do your own research and consult a SEBI-registered advisor before making financial decisions.*`,
+  content: `Namaste! 👋 I'm FinBot, your AI financial advisor.\n\nI can help you with SIPs, mutual funds, tax saving (80C, 80D), emergency funds, insurance, salary planning, and more — all personalised for India.\n\nWhat would you like to know today?`,
 };
 
 function TypingIndicator() {
@@ -35,29 +35,17 @@ function TypingIndicator() {
 
 function Message({ role, content }) {
   const isUser = role === 'user';
-  // Render disclaimer in italic
-  const parts = content.split('---');
   return (
     <div className={`flex items-end gap-2.5 chat-message-enter ${isUser ? 'flex-row-reverse' : ''}`}>
       <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0
         ${isUser ? 'bg-blue-600' : 'bg-blue-100 dark:bg-blue-900/40'}`}>
         {isUser ? <User size={14} className="text-white" /> : <Bot size={14} className="text-blue-600 dark:text-blue-400" />}
       </div>
-      <div className={`max-w-[80%] rounded-2xl text-sm leading-relaxed
-        ${isUser ? 'bg-blue-600 text-white rounded-br-sm px-4 py-3' : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-sm overflow-hidden'}`}>
-        {isUser ? (
-          <span className="whitespace-pre-wrap">{content}</span>
-        ) : (
-          <div>
-            <div className="px-4 py-3 whitespace-pre-wrap">{parts[0]}</div>
-            {parts[1] && (
-              <div className="border-t border-gray-200 dark:border-gray-700 px-4 py-2 text-xs text-amber-600 dark:text-amber-400 flex items-start gap-1.5 bg-amber-50 dark:bg-amber-900/20">
-                <AlertTriangle size={11} className="flex-shrink-0 mt-0.5" />
-                <span>{parts[1].replace(/[*⚠️]/g, '').trim()}</span>
-              </div>
-            )}
-          </div>
-        )}
+      <div className={`max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap
+        ${isUser
+          ? 'bg-blue-600 text-white rounded-br-sm'
+          : 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-bl-sm'}`}>
+        {content}
       </div>
     </div>
   );
@@ -79,9 +67,9 @@ export default function AdvisorPage() {
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
   useEffect(() => { api.get('/advisor/history').then(r => setSessions(r.data.sessions || [])).catch(() => {}); }, []);
 
-  const limitLabel = aiLimit === -1 ? 'Unlimited' : `${aiLimit}/day`;
-  const usedToday  = usage?.used || 0;
-  const showBar    = aiLimit !== -1;
+  const usedToday = usage?.used || 0;
+  const showBar   = aiLimit !== -1;
+  const limitDisplay = aiLimit === -1 ? '∞' : aiLimit;
 
   const send = async (text) => {
     const msg = (text || input).trim();
@@ -98,7 +86,13 @@ export default function AdvisorPage() {
       const data = err.response?.data;
       if (data?.code === 'RATE_LIMIT') {
         setRateLimited(true);
-        setMessages(prev => [...prev, { role: 'assistant', content: `You've used all ${data.limit} daily messages on the ${data.plan} plan.\n\n${plan === 'free' ? 'Upgrade to Pro for 50 messages/day or Premium for unlimited.' : 'Upgrade to Premium for unlimited messages.'}` }]);
+        const upgradeNote = plan === 'free'
+          ? 'Upgrade to Pro for 50 messages/day or Premium for unlimited.'
+          : 'Upgrade to Premium for unlimited messages.';
+        setMessages(prev => [...prev, {
+          role: 'assistant',
+          content: `You've used all ${data.limit} AI messages for today (${data.plan} plan).\n\n${upgradeNote}`,
+        }]);
         setUsage({ used: data.used, limit: data.limit, plan: data.plan });
       } else if (err.response?.status === 429) {
         setMessages(prev => [...prev, { role: 'assistant', content: "I'm a little busy right now. Please try again in a moment." }]);
@@ -136,7 +130,7 @@ export default function AdvisorPage() {
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">AI Advisor</h1>
           <div className="flex items-center gap-3 mt-0.5">
             <span className="text-xs text-gray-400 dark:text-gray-500">
-              {usedToday}/{limitLabel === 'Unlimited' ? '∞' : aiLimit} messages today
+              {usedToday}/{limitDisplay} messages today
             </span>
             {plan !== 'premium' && (
               <Link to="/subscription" className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-0.5">
@@ -159,7 +153,7 @@ export default function AdvisorPage() {
 
       {/* Usage bar */}
       {showBar && (
-        <div className="mb-2 progress-bar" style={{ height: 3 }}>
+        <div className="mb-3 progress-bar" style={{ height: 3 }}>
           <div className="progress-fill" style={{
             width: `${Math.min((usedToday / aiLimit) * 100, 100)}%`,
             background: usedToday >= aiLimit ? '#ef4444' : usedToday >= aiLimit * 0.8 ? '#f59e0b' : '#3b82f6',
@@ -167,11 +161,11 @@ export default function AdvisorPage() {
         </div>
       )}
 
-      {/* AI disclaimer banner */}
-      <div className="mb-3 flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 rounded-xl">
-        <Info size={13} className="text-amber-500 flex-shrink-0" />
-        <p className="text-xs text-amber-700 dark:text-amber-300">
-          <strong>AI Disclaimer:</strong> FinBot uses historical data and general principles. Results are not personalised financial advice. Always verify and consult a SEBI-registered advisor before investing.
+      {/* One-time disclaimer — shown permanently at top, NOT in messages */}
+      <div className="mb-3 flex items-start gap-2 px-3 py-2.5 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 rounded-xl">
+        <Info size={13} className="text-amber-500 flex-shrink-0 mt-0.5" />
+        <p className="text-xs text-amber-700 dark:text-amber-300 leading-relaxed">
+          <strong>AI Disclaimer:</strong> FinBot provides educational information based on historical data and general principles — not personalised financial advice. Please do your own research and consult a SEBI-registered advisor before making investment decisions.
         </p>
       </div>
 
@@ -180,7 +174,7 @@ export default function AdvisorPage() {
         <div className="mb-3 card border-amber-200 dark:border-amber-800/60 bg-amber-50 dark:bg-amber-900/20 flex items-center justify-between py-3">
           <div className="flex items-center gap-2">
             <Crown size={15} className="text-amber-500" />
-            <span className="text-sm text-amber-800 dark:text-amber-300">Daily limit reached ({plan} plan)</span>
+            <span className="text-sm text-amber-800 dark:text-amber-300">Daily limit reached</span>
           </div>
           <Link to="/subscription" className="btn-primary text-xs py-1.5 px-3 bg-amber-500 hover:bg-amber-600 flex items-center gap-1">
             <Crown size={11} /> Upgrade

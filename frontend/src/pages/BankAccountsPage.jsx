@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import api, { formatINR } from '../utils/api';
 import { usePremium } from '../hooks/usePremium';
 import PremiumGate from '../components/PremiumGate';
-import { Plus, Link2, Landmark, CreditCard, Wallet, Trash2, RefreshCw, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Link2, Landmark, CreditCard, Wallet, Trash2, RefreshCw, Clock } from 'lucide-react';
 
 const ACCOUNT_TYPES = [
   { value: 'savings',     label: 'Savings Account' },
@@ -22,20 +22,18 @@ const POPULAR_BANKS = [
   'SBI','HDFC Bank','ICICI Bank','Axis Bank','Kotak Mahindra Bank',
   'Yes Bank','IDFC First Bank','Punjab National Bank','Bank of Baroda',
   'Canara Bank','Union Bank','Federal Bank','IndusInd Bank',
-  'AU Small Finance Bank','Ujjivan Small Finance Bank','RBL Bank',
-  'Karnataka Bank','South Indian Bank','IDBI Bank','UCO Bank',
+  'AU Small Finance Bank','Ujjivan SFB','RBL Bank','IDBI Bank',
 ];
 
 const COLORS = ['#3b82f6','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#06b6d4','#64748b'];
 
 const EMPTY_FORM = {
   accountName: '', bankName: '', accountType: 'savings',
-  accountNumber: '', ifscCode: '', balance: '0',
-  creditLimit: '', color: COLORS[0],
+  accountNumber: '', ifscCode: '', creditLimit: '', color: COLORS[0],
 };
 
 export default function BankAccountsPage() {
-  const { isPremium: isPro, loading: premLoading } = usePremium();
+  const { isPremium, loading: premLoading } = usePremium();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -44,10 +42,9 @@ export default function BankAccountsPage() {
   const [setuLoading, setSetuLoading] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [formError, setFormError] = useState('');
-
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  useEffect(() => { if (!premLoading && isPro) load(); }, [premLoading, isPro]);
+  useEffect(() => { if (!premLoading && isPremium) load(); else if (!premLoading) setLoading(false); }, [premLoading, isPremium]);
 
   async function load() {
     try {
@@ -59,27 +56,26 @@ export default function BankAccountsPage() {
   async function handleAdd(e) {
     e.preventDefault();
     setFormError('');
-
     if (!form.accountNumber.trim()) { setFormError('Account number is required'); return; }
-    if (form.accountType !== 'wallet' && form.accountType !== 'demat' && !form.ifscCode.trim()) {
+    if (!['wallet','demat'].includes(form.accountType) && !form.ifscCode.trim()) {
       setFormError('IFSC code is required'); return;
     }
-
     try {
-      // Mask account number for display (keep last 4)
       const masked = form.accountNumber.replace(/\d(?=\d{4})/g, 'X');
       await api.post('/bank/accounts', {
-        ...form,
+        accountName: form.accountName,
+        bankName: form.bankName,
+        accountType: form.accountType,
         accountNumberMasked: masked,
-        balance: parseFloat(form.balance) || 0,
+        ifscCode: form.ifscCode || null,
         creditLimit: form.creditLimit ? parseFloat(form.creditLimit) : null,
+        color: form.color,
+        // balance intentionally NOT sent — fetched from bank
       });
       setShowAdd(false);
       setForm(EMPTY_FORM);
       load();
-    } catch (err) {
-      setFormError(err.response?.data?.error || 'Failed to add account');
-    }
+    } catch (err) { setFormError(err.response?.data?.error || 'Failed to add account'); }
   }
 
   async function handleDelete(id) {
@@ -92,7 +88,7 @@ export default function BankAccountsPage() {
     setSyncing(accountId);
     try {
       await api.post('/bank/setu/callback', { accountId, consentId: 'mock' });
-      load();
+      await load();
     } catch { } finally { setSyncing(null); }
   }
 
@@ -103,7 +99,7 @@ export default function BankAccountsPage() {
       const res = await api.post('/bank/setu/consent', { phone: setuPhone });
       if (res.data.redirectUrl) {
         window.open(res.data.redirectUrl, '_blank', 'width=480,height=700,scrollbars=yes');
-        alert('Complete bank linking in the popup. Transactions will sync within a few minutes.');
+        alert('Complete bank linking in the popup. Balance and transactions will sync automatically.');
       } else {
         alert(res.data.message || 'Bank linking initiated');
       }
@@ -112,43 +108,46 @@ export default function BankAccountsPage() {
     } finally { setSetuLoading(false); }
   }
 
+  // Compute totals from accounts where balance is already fetched
   const totalBalance = accounts
-    .filter(a => !['credit_card','loan'].includes(a.account_type))
+    .filter(a => !['credit_card','loan'].includes(a.account_type) && a.balance != null)
     .reduce((s, a) => s + parseFloat(a.balance || 0), 0);
   const totalDebt = accounts
-    .filter(a => a.account_type === 'credit_card')
+    .filter(a => a.account_type === 'credit_card' && a.balance != null)
     .reduce((s, a) => s + parseFloat(a.balance || 0), 0);
 
-  if (premLoading) return <div className="text-gray-400 text-sm animate-pulse">Loading…</div>;
-  if (!isPro) return <PremiumGate requiredPlan="premium" feature="Bank Account Linking" />;
+  if (premLoading) return <div className="text-gray-400 animate-pulse text-sm">Loading…</div>;
+  if (!isPremium) return <PremiumGate requiredPlan="premium" feature="Bank Account Linking" />;
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Bank Accounts</h1>
-          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Manage all your accounts in one place</p>
+          <p className="text-gray-400 dark:text-gray-500 text-sm mt-0.5">Link accounts — balance fetched automatically</p>
         </div>
         <button onClick={() => setShowAdd(p => !p)} className="btn-primary text-sm py-2 flex items-center gap-2">
           <Plus size={14} /> Add account
         </button>
       </div>
 
-      {/* Net worth bar */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          { label: 'Total balance',    value: formatINR(totalBalance),          color: 'text-gray-900 dark:text-white' },
-          { label: 'Credit card debt', value: formatINR(totalDebt),             color: totalDebt > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white' },
-          { label: 'Net assets',       value: formatINR(totalBalance - totalDebt), color: totalBalance - totalDebt >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' },
-        ].map(({ label, value, color }) => (
-          <div key={label} className="stat-card">
-            <div className="stat-label">{label}</div>
-            <div className={`text-xl font-bold tabular-nums ${color}`}>{value}</div>
-          </div>
-        ))}
-      </div>
+      {/* Totals — only if we have balance data */}
+      {accounts.some(a => a.balance != null) && (
+        <div className="grid grid-cols-3 gap-3">
+          {[
+            { label: 'Total balance',    value: formatINR(totalBalance), color: 'text-gray-900 dark:text-white' },
+            { label: 'Credit card debt', value: formatINR(totalDebt),    color: totalDebt > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white' },
+            { label: 'Net liquid',       value: formatINR(totalBalance - totalDebt), color: (totalBalance - totalDebt) >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400' },
+          ].map(({ label, value, color }) => (
+            <div key={label} className="stat-card">
+              <div className="stat-label">{label}</div>
+              <div className={`text-xl font-bold tabular-nums ${color}`}>{value}</div>
+            </div>
+          ))}
+        </div>
+      )}
 
-      {/* Setu AA linking */}
+      {/* Setu AA */}
       <div className="card border-blue-100 dark:border-blue-900/40 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
         <div className="flex items-center gap-2 mb-2">
           <Link2 size={15} className="text-blue-600 dark:text-blue-400" />
@@ -156,11 +155,11 @@ export default function BankAccountsPage() {
           <span className="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">RBI Approved</span>
         </div>
         <p className="text-xs text-blue-600 dark:text-blue-400 mb-3">
-          Securely import all transactions automatically. Works with all major Indian banks.
+          Securely import balance and transactions automatically. Works with all major Indian banks. Balance refreshes every 30 days.
         </p>
         <div className="flex gap-2">
           <input className="input flex-1 text-sm" type="tel" placeholder="Mobile number linked to your bank"
-            value={setuPhone} onChange={e => setSetuPhone(e.target.value)} maxLength={10} />
+            value={setuPhone} onChange={e => setSetuPhone(e.target.value.replace(/\D/g,''))} maxLength={10} />
           <button onClick={handleSetuLink} disabled={setuLoading || setuPhone.length < 10}
             className="btn-primary text-sm py-2 px-4 whitespace-nowrap flex items-center gap-1.5">
             <Link2 size={13} />
@@ -174,10 +173,14 @@ export default function BankAccountsPage() {
         <div className="card">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Add account manually</h3>
           {formError && (
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 text-sm px-3 py-2.5 rounded-xl mb-4">
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 text-red-700 dark:text-red-300 text-sm px-3 py-2.5 rounded-xl mb-4">
               {formError}
             </div>
           )}
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/40 text-amber-700 dark:text-amber-300 text-xs px-3 py-2 rounded-xl mb-4 flex items-center gap-2">
+            <Clock size={12} className="flex-shrink-0" />
+            Balance will be automatically fetched after account is linked. No need to enter it manually.
+          </div>
           <form onSubmit={handleAdd} className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
               <div>
@@ -200,7 +203,7 @@ export default function BankAccountsPage() {
               <div>
                 <label className="label">Account number <span className="text-red-500">*</span></label>
                 <input className="input" placeholder="1234567890123456"
-                  value={form.accountNumber} onChange={e => set('accountNumber', e.target.value.replace(/\D/g, ''))}
+                  value={form.accountNumber} onChange={e => set('accountNumber', e.target.value.replace(/\D/g,''))}
                   maxLength={20} required />
               </div>
               {!['wallet','demat'].includes(form.accountType) && (
@@ -208,70 +211,57 @@ export default function BankAccountsPage() {
                   <label className="label">IFSC code <span className="text-red-500">*</span></label>
                   <input className="input uppercase" placeholder="HDFC0001234"
                     value={form.ifscCode} onChange={e => set('ifscCode', e.target.value.toUpperCase())}
-                    maxLength={11} pattern="[A-Z]{4}0[A-Z0-9]{6}" title="Valid IFSC: 4 letters, 0, 6 alphanumeric" required />
+                    maxLength={11} required />
                 </div>
               )}
-              {form.accountType === 'credit_card' ? (
-                <>
-                  <div>
-                    <label className="label">Credit limit (₹)</label>
-                    <input className="input" type="number" min="0" placeholder="100000"
-                      value={form.creditLimit} onChange={e => set('creditLimit', e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label">Outstanding balance (₹)</label>
-                    <input className="input" type="number" min="0" placeholder="0"
-                      value={form.balance} onChange={e => set('balance', e.target.value)} />
-                  </div>
-                </>
-              ) : (
+              {form.accountType === 'credit_card' && (
                 <div>
-                  <label className="label">Current balance (₹)</label>
-                  <input className="input" type="number" placeholder="45000"
-                    value={form.balance} onChange={e => set('balance', e.target.value)} />
+                  <label className="label">Credit limit (₹)</label>
+                  <input className="input" type="number" min="0" placeholder="100000"
+                    value={form.creditLimit} onChange={e => set('creditLimit', e.target.value)} />
                 </div>
               )}
             </div>
-
             <div>
-              <label className="label">Card color</label>
+              <label className="label">Card colour</label>
               <div className="flex gap-2 mt-1 flex-wrap">
                 {COLORS.map(c => (
                   <button key={c} type="button" onClick={() => set('color', c)}
-                    className={`w-8 h-8 rounded-xl transition-all duration-150 ${form.color === c ? 'scale-110 ring-2 ring-offset-2 ring-gray-300 dark:ring-offset-gray-900' : 'hover:scale-105'}`}
+                    className={`w-8 h-8 rounded-xl transition-all ${form.color === c ? 'scale-110 ring-2 ring-offset-2 ring-gray-300 dark:ring-offset-gray-900' : 'hover:scale-105'}`}
                     style={{ background: c }} />
                 ))}
               </div>
             </div>
-
             <div className="flex gap-2">
               <button type="submit" className="btn-primary text-sm py-2">Add account</button>
-              <button type="button" onClick={() => { setShowAdd(false); setFormError(''); }} className="btn-secondary text-sm py-2">Cancel</button>
+              <button type="button" onClick={() => { setShowAdd(false); setFormError(''); setForm(EMPTY_FORM); }} className="btn-secondary text-sm py-2">Cancel</button>
             </div>
           </form>
         </div>
       )}
 
-      {/* Accounts grid */}
+      {/* Account cards */}
       {loading ? (
-        <div className="text-gray-400 dark:text-gray-600 text-sm animate-pulse">Loading accounts…</div>
+        <div className="text-gray-400 dark:text-gray-600 animate-pulse text-sm">Loading accounts…</div>
       ) : accounts.length === 0 ? (
         <div className="card text-center py-14">
           <Landmark size={36} className="text-gray-200 dark:text-gray-700 mx-auto mb-3" />
           <div className="text-gray-500 dark:text-gray-400 text-sm font-medium">No accounts added yet</div>
-          <div className="text-gray-400 dark:text-gray-600 text-xs mt-1">Link via Setu or add manually above</div>
+          <div className="text-gray-400 dark:text-gray-600 text-xs mt-1">Link via Setu AA or add manually above</div>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {accounts.map(acc => {
             const isCC = acc.account_type === 'credit_card';
-            const utilPct = isCC && acc.credit_limit > 0
+            const hasBalance = acc.balance != null;
+            const utilPct = isCC && acc.credit_limit > 0 && hasBalance
               ? Math.round((acc.balance / acc.credit_limit) * 100) : null;
             const barColor = !utilPct ? '#10b981' : utilPct > 80 ? '#ef4444' : utilPct > 50 ? '#f59e0b' : '#10b981';
+            const needsRefresh = acc.last_synced &&
+              (Date.now() - new Date(acc.last_synced).getTime()) > 30 * 24 * 60 * 60 * 1000;
 
             return (
               <div key={acc.id} className="card-hover relative overflow-hidden group">
-                {/* Color accent bar */}
                 <div className="absolute inset-y-0 left-0 w-1.5 rounded-l-2xl" style={{ background: acc.color }} />
                 <div className="pl-4">
                   <div className="flex items-start justify-between mb-3">
@@ -287,7 +277,7 @@ export default function BankAccountsPage() {
                     </div>
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={() => handleSync(acc.id)} disabled={syncing === acc.id}
-                        className="btn-ghost w-7 h-7 flex items-center justify-center" title="Sync transactions">
+                        className="btn-ghost w-7 h-7 flex items-center justify-center" title="Refresh balance">
                         <RefreshCw size={12} className={syncing === acc.id ? 'animate-spin' : ''} />
                       </button>
                       <button onClick={() => handleDelete(acc.id)}
@@ -297,15 +287,28 @@ export default function BankAccountsPage() {
                     </div>
                   </div>
 
-                  <div className={`text-2xl font-bold tabular-nums ${isCC && acc.balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
-                    {formatINR(acc.balance)}
-                  </div>
+                  {/* Balance — shows "Pending sync" if not yet fetched */}
+                  {hasBalance ? (
+                    <div className={`text-2xl font-bold tabular-nums ${isCC && acc.balance > 0 ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}`}>
+                      {formatINR(acc.balance)}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2">
+                      <div className="text-sm text-gray-400 dark:text-gray-500">Balance pending sync</div>
+                      <button onClick={() => handleSync(acc.id)} disabled={syncing === acc.id}
+                        className="text-xs text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+                        <RefreshCw size={10} className={syncing === acc.id ? 'animate-spin' : ''} />
+                        {syncing === acc.id ? 'Syncing…' : 'Sync now'}
+                      </button>
+                    </div>
+                  )}
 
-                  {isCC && acc.credit_limit > 0 && (
-                    <div className="mt-3">
-                      <div className="flex justify-between text-xs mb-1.5">
-                        <span className="text-gray-400 dark:text-gray-500">Used: {formatINR(acc.balance)} of {formatINR(acc.credit_limit)}</span>
-                        <span style={{ color: barColor }} className="font-semibold">{utilPct}%</span>
+                  {/* Credit utilisation */}
+                  {isCC && acc.credit_limit > 0 && hasBalance && (
+                    <div className="mt-2">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-gray-400 dark:text-gray-500">{formatINR(acc.balance)} of {formatINR(acc.credit_limit)}</span>
+                        <span style={{ color: barColor }} className="font-semibold">{utilPct}% used</span>
                       </div>
                       <div className="progress-bar">
                         <div className="progress-fill" style={{ width: `${Math.min(utilPct, 100)}%`, background: barColor }} />
@@ -313,10 +316,12 @@ export default function BankAccountsPage() {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-2 mt-2.5 text-xs text-gray-300 dark:text-gray-600">
-                    {acc.transaction_count > 0 && <span>{acc.transaction_count} txns this month</span>}
+                  <div className="flex items-center gap-3 mt-2 text-xs text-gray-300 dark:text-gray-600">
                     {acc.last_synced && (
-                      <span>Synced {new Date(acc.last_synced).toLocaleDateString('en-IN', { day:'numeric', month:'short' })}</span>
+                      <span className={needsRefresh ? 'text-amber-500 dark:text-amber-400' : ''}>
+                        {needsRefresh ? '⚠ Refresh needed · ' : ''}
+                        Last sync: {new Date(acc.last_synced).toLocaleDateString('en-IN', { day:'numeric', month:'short' })}
+                      </span>
                     )}
                   </div>
                 </div>

@@ -9,8 +9,6 @@ const MODEL = process.env.GROQ_MODEL || 'llama-3.3-70b-versatile';
 // free=3, pro=50, premium=unlimited(-1)
 const PLAN_LIMITS = { free: 3, pro: 50, premium: -1 };
 
-const DISCLAIMER = `\n\n---\n⚠️ *Disclaimer: I am an AI assistant. All information is for educational purposes only based on historical data and general principles. Do not make financial decisions solely based on this advice. Consult a SEBI-registered financial advisor (RIA) before investing. Past performance is not indicative of future results.*`;
-
 const BASE_SYSTEM = `You are FinBot, an expert AI financial advisor built into FinOS — India's AI-powered personal finance OS.
 
 ## Persona
@@ -27,7 +25,7 @@ const BASE_SYSTEM = `You are FinBot, an expert AI financial advisor built into F
 - State expected returns with "expected, not guaranteed"
 - Never recommend individual stock tickers — suggest index funds/sectors
 - For tax/legal specifics, suggest consulting a CA or SEBI-registered advisor
-- End every response with a brief disclaimer reminding users to do their own research`;
+- DO NOT add any disclaimer or warning at the end of your responses — this is handled by the UI`;
 
 async function checkRateLimit(userId, plan) {
   const limit = PLAN_LIMITS[plan] ?? 3;
@@ -144,10 +142,12 @@ async function chat(req, res, next) {
     let reply = completion.choices[0]?.message?.content;
     if (!reply) throw new Error('Empty response from Groq');
 
-    // Append disclaimer if not already present
-    if (!reply.includes('Disclaimer') && !reply.includes('disclaimer')) {
-      reply += DISCLAIMER;
-    }
+    // Strip any disclaimer the model may have added despite instructions
+    reply = reply
+      .replace(/---\s*⚠️.*$/s, '')
+      .replace(/\*\*Disclaimer:?\*\*.*$/si, '')
+      .replace(/⚠️\s*\*?Disclaimer:?.*$/si, '')
+      .trim();
 
     const tokensUsed = (completion.usage?.prompt_tokens || 0) + (completion.usage?.completion_tokens || 0);
 
