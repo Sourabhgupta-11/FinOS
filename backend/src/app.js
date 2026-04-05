@@ -17,6 +17,7 @@ const portfolioRoutes    = require('./routes/portfolio');
 const taxRoutes          = require('./routes/tax');
 const bankRoutes         = require('./routes/bank');
 const notifRoutes        = require('./routes/notifications');
+const networthRoutes     = require('./routes/networth');
 
 const { errorHandler }              = require('./middleware/errorHandler');
 const { authenticate }              = require('./middleware/auth');
@@ -33,43 +34,43 @@ app.use(morgan('combined', {
   skip: req => req.path === '/health',
 }));
 
-// Raw body for webhook BEFORE json()
+// Webhook needs raw body — BEFORE json()
 app.use('/api/subscription/webhook', express.raw({ type: '*/*' }));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting
 const apiLimiter  = rateLimit({ windowMs: 15*60*1000, max: 300, standardHeaders: true });
-const aiLimiter   = rateLimit({ windowMs: 60*1000, max: 30, message: { error: 'Too many requests' } });
-const authLimiter = rateLimit({ windowMs: 15*60*1000, max: 20, message: { error: 'Too many auth attempts' } });
+const aiLimiter   = rateLimit({ windowMs: 60*1000, max: 60, message: { error: 'Too many requests' } });
+const authLimiter = rateLimit({ windowMs: 15*60*1000, max: 20 });
 app.use('/api/', apiLimiter);
 app.use('/api/advisor/', aiLimiter);
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
 
-// Health
 app.get('/health', (req, res) =>
-  res.json({ status: 'ok', version: '3.0.0', timestamp: new Date().toISOString() })
+  res.json({ status: 'ok', version: '3.1.0', timestamp: new Date().toISOString() })
 );
 
-// ── Public routes ─────────────────────────────────────────────────────────────
+// ── Public ────────────────────────────────────────────────────────────────────
 app.use('/api/auth',         authRoutes);
 app.use('/api/email',        emailRoutes);
-app.use('/api/subscription', subscriptionRoutes);  // webhook is public inside
+app.use('/api/subscription', subscriptionRoutes);
 
-// ── Authenticated routes ──────────────────────────────────────────────────────
-app.use('/api/auth',     authenticate, authExtendedRoutes);  // profile/password/delete
+// ── Authenticated ─────────────────────────────────────────────────────────────
+app.use('/api/auth',     authenticate, authExtendedRoutes);
 app.use('/api/profile',  authenticate, profileRoutes);
-app.use('/api/finance',  authenticate, financeRoutes);
-app.use('/api/advisor',  authenticate, advisorRoutes);
+app.use('/api/finance',  authenticate, financeRoutes);      // history/simulator gated inside
+app.use('/api/advisor',  authenticate, advisorRoutes);      // plan limits inside
+app.use('/api/networth', authenticate, networthRoutes);     // available all plans (basic)
 
-// ── Pro plan (₹99/mo) ─────────────────────────────────────────────────────────
-app.use('/api/tax',           authenticate, requirePro,     taxRoutes);
-app.use('/api/bank',          authenticate, requirePro,     bankRoutes);
-app.use('/api/notifications', authenticate, requirePro,     notifRoutes);
+// ── Pro plan (₹99/mo): expenses, bank, history ────────────────────────────────
+// NOTE: finance/history gated in routes/finance.js
 
-// ── Premium plan (₹199/mo) ───────────────────────────────────────────────────
-app.use('/api/portfolio', authenticate, requirePremium, portfolioRoutes);
+// ── Premium plan (₹199/mo): bank, expenses, tax, portfolio ───────────────────
+app.use('/api/portfolio',     authenticate, requirePremium, portfolioRoutes);
+app.use('/api/tax',           authenticate, requirePremium, taxRoutes);
+app.use('/api/bank',          authenticate, requirePremium, bankRoutes);
+app.use('/api/notifications', authenticate, requirePremium, notifRoutes);
 
 // ── 404 + error ───────────────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Route not found' }));

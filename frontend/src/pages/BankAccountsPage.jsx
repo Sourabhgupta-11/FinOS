@@ -35,7 +35,7 @@ const EMPTY_FORM = {
 };
 
 export default function BankAccountsPage() {
-  const { isPro, loading: premLoading } = usePremium();
+  const { isPremium: isPro, loading: premLoading } = usePremium();
   const [accounts, setAccounts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -120,7 +120,7 @@ export default function BankAccountsPage() {
     .reduce((s, a) => s + parseFloat(a.balance || 0), 0);
 
   if (premLoading) return <div className="text-gray-400 text-sm animate-pulse">Loading…</div>;
-  if (!isPro) return <PremiumGate requiredPlan="pro" feature="Bank Account Linking" />;
+  if (!isPro) return <PremiumGate requiredPlan="premium" feature="Bank Account Linking" />;
 
   return (
     <div className="space-y-6">

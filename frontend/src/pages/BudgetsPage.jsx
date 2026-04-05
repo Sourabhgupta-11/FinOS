@@ -5,7 +5,7 @@ import PremiumGate from '../components/PremiumGate';
 import { Plus, Target, AlertTriangle, CheckCircle, Trash2 } from 'lucide-react';
 
 export default function BudgetsPage() {
-  const { isPro, loading: premLoading } = usePremium();
+  const { isPremium: isPro, loading: premLoading } = usePremium();
   const [budgets, setBudgets] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,7 +38,7 @@ export default function BudgetsPage() {
   }
 
   if (premLoading) return <div className="text-gray-400 animate-pulse text-sm">Loading…</div>;
-  if (!isPro) return <PremiumGate requiredPlan="pro" feature="Budget Manager" />;
+  if (!isPro) return <PremiumGate requiredPlan="premium" feature="Budget Manager" />;
 
   const totalBudget = budgets.reduce((s, b) => s + parseFloat(b.amount), 0);
   const totalSpent  = budgets.reduce((s, b) => s + parseFloat(b.spent || 0), 0);

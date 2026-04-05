@@ -26,6 +26,8 @@ export function usePremium() {
     isPro:     PLAN_ORDER[effectivePlan] >= PLAN_ORDER.pro,
     isPremium: PLAN_ORDER[effectivePlan] >= PLAN_ORDER.premium,
     isFree:    effectivePlan === 'free',
-    hasPlan: (minPlan) => PLAN_ORDER[effectivePlan] >= PLAN_ORDER[minPlan],
+    hasPlan: (minPlan) => PLAN_ORDER[effectivePlan] >= (PLAN_ORDER[minPlan] ?? 0),
+    // AI limits
+    aiLimit: effectivePlan === 'premium' ? -1 : effectivePlan === 'pro' ? 50 : 3,
   };
 }

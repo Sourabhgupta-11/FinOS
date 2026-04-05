@@ -41,7 +41,6 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password"  element={<ResetPasswordPage />} />
       <Route path="/verify-email"    element={<VerifyEmailPage />} />
-
       <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
         <Route index                element={<DashboardPage />} />
         <Route path="allocator"     element={<AllocatorPage />} />

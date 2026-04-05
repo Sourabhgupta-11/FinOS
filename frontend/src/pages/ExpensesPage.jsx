@@ -8,7 +8,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from 'recharts';
 const COLORS = ['#3b82f6','#ef4444','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#6b7280'];
 
 export default function ExpensesPage() {
-  const { isPro, loading: premLoading } = usePremium();
+  const { isPremium: isPro, loading: premLoading } = usePremium();
   const [txs, setTxs] = useState([]);
   const [analytics, setAnalytics] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -113,7 +113,7 @@ export default function ExpensesPage() {
   }
 
   if (premLoading) return <div className="text-gray-400 animate-pulse text-sm">Loading…</div>;
-  if (!isPro) return <PremiumGate requiredPlan="pro" feature="Expense Manager" />;
+  if (!isPro) return <PremiumGate requiredPlan="premium" feature="Expense Manager" />;
 
   const byCategory = analytics?.byCategory || [];
   const totals = analytics?.totals || {};

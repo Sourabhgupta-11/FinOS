@@ -19,12 +19,12 @@ const NAV = [
   { to: '/advisor',   icon: MessageCircle,     label: 'AI Advisor',    min: 'free' },
   { section: 'Pro' },
   { to: '/simulator', icon: FlaskConical,      label: 'Simulator',     min: 'pro' },
-  { to: '/expenses',  icon: CreditCard,        label: 'Expenses',      min: 'pro' },
-  { to: '/bank',      icon: Landmark,          label: 'Bank Accounts', min: 'pro' },
-  { to: '/budgets',   icon: Target,            label: 'Budgets',       min: 'pro' },
-  { to: '/tax',       icon: Calculator,        label: 'Tax Calculator',min: 'pro' },
   { to: '/history',   icon: History,           label: 'History',       min: 'pro' },
   { section: 'Premium' },
+  { to: '/expenses',  icon: CreditCard,        label: 'Expenses',      min: 'premium' },
+  { to: '/bank',      icon: Landmark,          label: 'Bank Accounts', min: 'premium' },
+  { to: '/budgets',   icon: Target,            label: 'Budgets',       min: 'premium' },
+  { to: '/tax',       icon: Calculator,        label: 'Tax Calculator',min: 'premium' },
   { to: '/portfolio', icon: TrendingUp,        label: 'Portfolio',     min: 'premium' },
 ];
 

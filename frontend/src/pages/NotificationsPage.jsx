@@ -13,7 +13,7 @@ const TYPE_CONFIG = {
 };
 
 export default function NotificationsPage() {
-  const { isPro, loading: premLoading } = usePremium();
+  const { isPremium: isPro, loading: premLoading } = usePremium();
   const [notifications, setNotifications] = useState([]);
   const [unread, setUnread] = useState(0);
   const [pushEnabled, setPushEnabled] = useState(false);
@@ -100,7 +100,7 @@ export default function NotificationsPage() {
   }
 
   if (premLoading) return <div className="text-gray-400 animate-pulse text-sm">Loading…</div>;
-  if (!isPro) return <PremiumGate requiredPlan="pro" feature="Notifications" />;
+  if (!isPro) return <PremiumGate requiredPlan="premium" feature="Notifications" />;
 
   return (
     <div className="space-y-6">
