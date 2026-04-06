@@ -20,4 +20,5 @@ RUN mkdir -p logs && chown -R node:node /app
 USER node
 EXPOSE 3001
 ENTRYPOINT ["dumb-init", "--"]
-CMD ["node", "src/index.js"]
+# Run migrations first, then start server
+CMD ["sh", "-c", "node src/db/migrate.js && node src/index.js"]

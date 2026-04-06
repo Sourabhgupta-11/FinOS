@@ -5,6 +5,7 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: 5173,
+    // proxy only used locally via docker-compose, not on Vercel
     proxy: {
       '/api': {
         target: 'http://localhost:3001',
