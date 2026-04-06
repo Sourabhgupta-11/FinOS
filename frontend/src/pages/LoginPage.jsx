@@ -1,26 +1,30 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import { Eye, EyeOff } from 'lucide-react';
-import Logo from '../components/Logo';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import { Eye, EyeOff } from "lucide-react";
+import Logo from "../components/Logo";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 
 export default function LoginPage() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ email: '', password: '' });
-  const [error, setError] = useState('');
+  const [form, setForm] = useState({ email: "", password: "" });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    setError("");
+    setLoading(true);
     try {
       await login(form.email, form.password);
-      navigate('/');
+      navigate("/");
     } catch (err) {
-      setError(err.response?.data?.error || 'Invalid email or password');
-    } finally { setLoading(false); }
+      setError(err.response?.data?.error || "Invalid email or password");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -34,12 +38,33 @@ export default function LoginPage() {
           <div className="flex justify-center mb-4">
             <Logo size={56} />
           </div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">FinOS</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Your AI-powered finance OS</p>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+            FinOS
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            Your AI-powered finance OS
+          </p>
         </div>
 
         <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-5">Sign in</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-5">
+            Sign in
+          </h2>
+
+          {/* Google Sign In Button */}
+          <div className="mb-5">
+            <GoogleSignInButton />
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              OR
+            </span>
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-700 dark:text-red-300 text-sm px-3 py-2.5 rounded-xl">
@@ -48,32 +73,66 @@ export default function LoginPage() {
             )}
             <div>
               <label className="label">Email</label>
-              <input className="input" type="email" placeholder="you@example.com"
-                value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required autoFocus />
+              <input
+                className="input"
+                type="email"
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, email: e.target.value }))
+                }
+                required
+                autoFocus
+              />
             </div>
             <div>
               <div className="flex justify-between items-center mb-1.5">
                 <label className="label mb-0">Password</label>
-                <Link to="/forgot-password" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">Forgot?</Link>
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                >
+                  Forgot?
+                </Link>
               </div>
               <div className="relative">
-                <input className="input pr-10" type={showPass ? 'text' : 'password'} placeholder="••••••••"
-                  value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} required />
-                <button type="button" onClick={() => setShowPass(p => !p)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                <input
+                  className="input pr-10"
+                  type={showPass ? "text" : "password"}
+                  placeholder="••••••••"
+                  value={form.password}
+                  onChange={(e) =>
+                    setForm((p) => ({ ...p, password: e.target.value }))
+                  }
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPass((p) => !p)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                >
                   {showPass ? <EyeOff size={15} /> : <Eye size={15} />}
                 </button>
               </div>
             </div>
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign in →'}
+            <button
+              type="submit"
+              className="btn-primary w-full"
+              disabled={loading}
+            >
+              {loading ? "Signing in…" : "Sign in →"}
             </button>
           </form>
         </div>
 
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
-          No account?{' '}
-          <Link to="/register" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Create one free</Link>
+          No account?{" "}
+          <Link
+            to="/register"
+            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          >
+            Create one free
+          </Link>
         </p>
       </div>
     </div>

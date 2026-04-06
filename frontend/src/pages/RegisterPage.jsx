@@ -1,24 +1,32 @@
-import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
-import Logo from '../components/Logo';
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
+import Logo from "../components/Logo";
+import GoogleSignInButton from "../components/GoogleSignInButton";
 
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ name: '', email: '', password: '' });
-  const [error, setError] = useState('');
+  const [form, setForm] = useState({ name: "", email: "", password: "" });
+  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError(''); setLoading(true);
+    setError("");
+    setLoading(true);
     try {
       await register(form.name, form.email, form.password);
-      navigate('/');
+      navigate("/");
     } catch (err) {
-      setError(err.response?.data?.error || err.response?.data?.errors?.[0]?.msg || 'Registration failed');
-    } finally { setLoading(false); }
+      setError(
+        err.response?.data?.error ||
+          err.response?.data?.errors?.[0]?.msg ||
+          "Registration failed",
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,13 +36,36 @@ export default function RegisterPage() {
 
       <div className="w-full max-w-sm relative z-10">
         <div className="text-center mb-8">
-          <div className="flex justify-center mb-4"><Logo size={56} /></div>
-          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">FinOS</h1>
-          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">Start your financial journey</p>
+          <div className="flex justify-center mb-4">
+            <Logo size={56} />
+          </div>
+          <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white tracking-tight">
+            FinOS
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 text-sm mt-1">
+            Start your financial journey
+          </p>
         </div>
 
         <div className="glass-card p-6">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-5">Create account</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-5">
+            Create account
+          </h2>
+
+          {/* Google Sign In Button */}
+          <div className="mb-5">
+            <GoogleSignInButton />
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center gap-3 mb-5">
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+            <span className="text-xs text-gray-500 dark:text-gray-400 font-medium">
+              OR
+            </span>
+            <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-700 dark:text-red-300 text-sm px-3 py-2.5 rounded-xl">
@@ -43,28 +74,68 @@ export default function RegisterPage() {
             )}
             <div>
               <label className="label">Full name</label>
-              <input className="input" type="text" placeholder="Rahul Sharma"
-                value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} required autoFocus />
+              <input
+                className="input"
+                type="text"
+                placeholder="Rahul Sharma"
+                value={form.name}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, name: e.target.value }))
+                }
+                required
+                autoFocus
+              />
             </div>
             <div>
               <label className="label">Email</label>
-              <input className="input" type="email" placeholder="you@example.com"
-                value={form.email} onChange={e => setForm(p => ({ ...p, email: e.target.value }))} required />
+              <input
+                className="input"
+                type="email"
+                placeholder="you@example.com"
+                value={form.email}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, email: e.target.value }))
+                }
+                required
+              />
             </div>
             <div>
-              <label className="label">Password <span className="text-gray-400 font-normal normal-case">(min 8 chars)</span></label>
-              <input className="input" type="password" placeholder="••••••••"
-                value={form.password} onChange={e => setForm(p => ({ ...p, password: e.target.value }))} required minLength={8} />
+              <label className="label">
+                Password{" "}
+                <span className="text-gray-400 font-normal normal-case">
+                  (min 8 chars)
+                </span>
+              </label>
+              <input
+                className="input"
+                type="password"
+                placeholder="••••••••"
+                value={form.password}
+                onChange={(e) =>
+                  setForm((p) => ({ ...p, password: e.target.value }))
+                }
+                required
+                minLength={8}
+              />
             </div>
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'Creating account…' : 'Create account →'}
+            <button
+              type="submit"
+              className="btn-primary w-full"
+              disabled={loading}
+            >
+              {loading ? "Creating account…" : "Create account →"}
             </button>
           </form>
         </div>
 
         <p className="text-center text-sm text-gray-500 dark:text-gray-400 mt-4">
-          Already have an account?{' '}
-          <Link to="/login" className="text-blue-600 dark:text-blue-400 hover:underline font-medium">Sign in</Link>
+          Already have an account?{" "}
+          <Link
+            to="/login"
+            className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+          >
+            Sign in
+          </Link>
         </p>
       </div>
     </div>
