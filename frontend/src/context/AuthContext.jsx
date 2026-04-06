@@ -54,7 +54,7 @@ export function AuthProvider({ children }) {
     const backendUrl =
       baseURL.replace("/api", "") ||
       window.location.origin.replace(":5173", ":3001");
-    window.location.href = `${backendUrl}/api/auth/google/google`;
+    window.location.href = `${backendUrl}/api/auth/google`;
   };
 
   const setTokenFromGoogle = useCallback(async (token) => {

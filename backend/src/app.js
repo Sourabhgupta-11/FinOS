@@ -5,6 +5,7 @@ const helmet = require("helmet");
 const compression = require("compression");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
+const passport = require("passport");
 
 const authRoutes = require("./routes/auth");
 const authExtendedRoutes = require("./routes/authExtended");
@@ -45,6 +46,7 @@ app.use(
     skip: (req) => req.path === "/health",
   }),
 );
+app.use(passport.initialize());
 
 app.use("/api/subscription/webhook", express.raw({ type: "*/*" }));
 app.use(express.json({ limit: "10mb" }));
@@ -71,8 +73,8 @@ app.get("/health", (req, res) =>
 );
 
 // ── Public ────────────────────────────────────────────────────────────────────
+app.use("/api/auth", googleAuthRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/auth/google", googleAuthRoutes);
 app.use("/api/email", emailRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 
