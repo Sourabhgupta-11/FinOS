@@ -30,33 +30,85 @@ passport.use(
         if (!email)
           return done(new Error("No email returned from Google"), null);
 
-        // Check if user already exists
+        // Check if user already exists with this email
         const existing = await query(
-          "SELECT id, email, name FROM users WHERE email = $1",
+          "SELECT id, email, name, google_id, password_hash FROM users WHERE email = $1",
           [email],
         );
 
         let user = existing.rows[0];
 
         if (user) {
-          // Link google_id if not already linked
-          await query(
-            "UPDATE users SET google_id = $1, email_verified = true WHERE id = $2 AND google_id IS NULL",
-            [googleId, user.id],
-          );
+          // User exists - link Google to this account if not already linked
+          if (!user.google_id) {
+            // User previously signed up with password - link Google to same account
+            await query(
+              "UPDATE users SET google_id = $1, email_verified = true WHERE id = $2",
+              [googleId, user.id],
+            );
+            logger.info("Google linked to existing password account", {
+              userId: user.id,
+              email: user.email,
+            });
+          } else if (user.google_id === googleId) {
+            // Same Google account, user just logging in
+            logger.info("Google user logged in", {
+              userId: user.id,
+              email: user.email,
+            });
+          } else {
+            // Different Google ID with same email - suspicious activity
+            logger.warn("Multiple Google IDs for same email attempted", {
+              email: user.email,
+              existingGoogleId: user.google_id,
+              newGoogleId: googleId,
+            });
+            // Still return existing user to prevent account takeover
+            return done(null, user);
+          }
+          return done(null, user);
         } else {
-          // Create new user — password_hash is NULL for Google users (allowed after migration 005)
-          const { rows } = await query(
-            `INSERT INTO users (email, name, password_hash, google_id, email_verified)
-         VALUES ($1, $2, NULL, $3, true)
-         RETURNING id, email, name`,
-            [email, name, googleId],
-          );
-          user = rows[0];
-          logger.info("New Google user registered", {
-            userId: user.id,
-            email: user.email,
-          });
+          // Create new user — password_hash is NULL for Google users
+          try {
+            const { rows } = await query(
+              `INSERT INTO users (email, name, password_hash, google_id, email_verified)
+           VALUES ($1, $2, NULL, $3, true)
+           RETURNING id, email, name`,
+              [email, name, googleId],
+            );
+            user = rows[0];
+            logger.info("New Google user registered", {
+              userId: user.id,
+              email: user.email,
+            });
+          } catch (dbErr) {
+            // Handle race condition: unique constraint violated
+            if (dbErr.code === "23505") {
+              logger.warn(
+                "Duplicate email during Google OAuth (race condition)",
+                {
+                  email: email,
+                },
+              );
+              // Retry the lookup - the other request should have inserted by now
+              const retryExisting = await query(
+                "SELECT id, email, name, google_id, password_hash FROM users WHERE email = $1",
+                [email],
+              );
+              if (retryExisting.rows[0]) {
+                user = retryExisting.rows[0];
+                // Link Google if not already linked
+                if (!user.google_id) {
+                  await query(
+                    "UPDATE users SET google_id = $1, email_verified = true WHERE id = $2",
+                    [googleId, user.id],
+                  );
+                }
+                return done(null, user);
+              }
+            }
+            throw dbErr;
+          }
         }
 
         return done(null, user);
@@ -90,7 +142,7 @@ router.get(
 
       const token = generateToken(req.user.id);
       const frontendUrl = process.env.APP_URL || "http://localhost:5173";
-      logger.info("Google user logged in", {
+      logger.info("User logged in via Google", {
         userId: req.user.id,
         email: req.user.email,
       });

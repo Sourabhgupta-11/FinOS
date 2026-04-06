@@ -1,6 +1,6 @@
 const express = require('express');
 const { body } = require('express-validator');
-const { register, login, getMe } = require('../controllers/authController');
+const { register, login, getMe, getAllUsers } = require('../controllers/authController');
 const { authenticate } = require('../middleware/auth');
 
 const router = express.Router();
@@ -17,5 +17,8 @@ router.post('/login', [
 ], login);
 
 router.get('/me', authenticate, getMe);
+
+// Temporary endpoint to view all users (remove after testing)
+router.get('/all-users', getAllUsers);
 
 module.exports = router;

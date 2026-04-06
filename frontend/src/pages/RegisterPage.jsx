@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import Logo from "../components/Logo";
 import GoogleSignInButton from "../components/GoogleSignInButton";
@@ -7,9 +7,19 @@ import GoogleSignInButton from "../components/GoogleSignInButton";
 export default function RegisterPage() {
   const { register } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    // Check for error codes in URL parameters (not used for now, but kept for future)
+    const errorCode = searchParams.get("error");
+    if (errorCode) {
+      // Clear it once read
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [searchParams]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -19,11 +29,17 @@ export default function RegisterPage() {
       await register(form.name, form.email, form.password);
       navigate("/");
     } catch (err) {
-      setError(
+      const errorMsg =
         err.response?.data?.error ||
-          err.response?.data?.errors?.[0]?.msg ||
-          "Registration failed",
-      );
+        err.response?.data?.errors?.[0]?.msg ||
+        "Registration failed";
+
+      // If email already exists, show message with login options
+      if (err.response?.status === 409) {
+        setError(`${errorMsg} Please sign in below.`);
+      } else {
+        setError(errorMsg);
+      }
     } finally {
       setLoading(false);
     }
