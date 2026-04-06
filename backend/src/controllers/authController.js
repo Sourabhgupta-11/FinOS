@@ -57,11 +57,6 @@ async function login(req, res, next) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // Google-only users have no password — tell them to use Google sign-in
-    if (!user.password_hash) {
-      return res.status(401).json({ error: 'This account uses Google sign-in. Please continue with Google.' });
-    }
-
     const valid = await bcrypt.compare(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });

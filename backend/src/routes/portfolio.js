@@ -3,9 +3,11 @@ const router = express.Router();
 const ctrl = require('../controllers/portfolioController');
 
 router.get('/', ctrl.getPortfolio);
-router.post('/', ctrl.addHolding);
+router.post('/', ctrl.addHolding);   // fixed
 router.delete('/:id', ctrl.deleteHolding);
 router.post('/refresh', ctrl.refreshPrices);
-router.get('/insights', ctrl.getInsights);
+
+// optional — remove if not implemented
+//router.get('/transactions', ctrl.getTransactions);
 
 module.exports = router;
