@@ -4,32 +4,32 @@
 
 ## Tech Stack
 
-| Layer | Tech |
-|-------|------|
-| Frontend | React 18 + Vite + TailwindCSS |
-| Backend | Node.js + Express |
-| Database | PostgreSQL 15 |
-| AI | Groq (Llama 3.3 70B) + RAG |
-| Cache | Redis |
-| Payments | Razorpay |
-| Bank Linking | Setu Account Aggregator |
-| Push Notifications | Web Push (VAPID) |
-| Infrastructure | AWS ECS Fargate + RDS + CloudFront |
+| Layer              | Tech                               |
+| ------------------ | ---------------------------------- |
+| Frontend           | React 18 + Vite + TailwindCSS      |
+| Backend            | Node.js + Express                  |
+| Database           | PostgreSQL 15                      |
+| AI                 | Groq (Llama 3.3 70B) + RAG         |
+| Cache              | Redis                              |
+| Payments           | Lemonsqueezy                       |
+| Bank Linking       | Setu Account Aggregator            |
+| Push Notifications | Web Push (VAPID)                   |
+| Infrastructure     | AWS ECS Fargate + RDS + CloudFront |
 
 ## Plans
 
-| | Free | Pro ₹99/mo | Premium ₹199/mo |
-|-|------|-----------|----------------|
-| Salary Allocator | ✓ | ✓ | ✓ |
-| AI Advisor | 5 msg/day | 100 msg/day | Unlimited |
-| Health Score | ✓ | ✓ | ✓ |
-| Expense Tracker | ✗ | ✓ | ✓ |
-| Bank Account Linking | ✗ | ✓ | ✓ |
-| Tax Calculator | ✗ | ✓ | ✓ |
-| Budget Manager | ✗ | ✓ | ✓ |
-| Decision Simulator | ✗ | ✓ | ✓ |
-| Allocation History | ✗ | ✓ | ✓ |
-| Portfolio Tracker | ✗ | ✗ | ✓ |
+|                      | Free      | Pro ₹99/mo  | Premium ₹199/mo |
+| -------------------- | --------- | ----------- | --------------- |
+| Salary Allocator     | ✓         | ✓           | ✓               |
+| AI Advisor           | 5 msg/day | 100 msg/day | Unlimited       |
+| Health Score         | ✓         | ✓           | ✓               |
+| Expense Tracker      | ✗         | ✓           | ✓               |
+| Bank Account Linking | ✗         | ✓           | ✓               |
+| Tax Calculator       | ✗         | ✓           | ✓               |
+| Budget Manager       | ✗         | ✓           | ✓               |
+| Decision Simulator   | ✗         | ✓           | ✓               |
+| Allocation History   | ✗         | ✓           | ✓               |
+| Portfolio Tracker    | ✗         | ✗           | ✓               |
 
 ## Quick Start
 

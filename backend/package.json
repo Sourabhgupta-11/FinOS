@@ -32,7 +32,6 @@
     "passport-google-oauth20": "^2.0.0",
     "pg": "^8.11.3",
     "pg-pool": "^3.6.2",
-    "razorpay": "^2.9.2",
     "uuid": "^9.0.1",
     "web-push": "^3.6.7",
     "winston": "^3.13.0"
