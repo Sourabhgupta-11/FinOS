@@ -7,6 +7,10 @@ import GoogleCallbackPage from "./pages/GoogleCallbackPage";
 import ForgotPasswordPage from "./pages/ForgotPasswordPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import VerifyEmailPage from "./pages/VerifyEmailPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
+import TermsConditionsPage from "./pages/TermsConditionsPage";
+import RefundPolicyPage from "./pages/RefundPolicyPage";
+import ContactUsPage from "./pages/ContactUsPage";
 import DashboardPage from "./pages/DashboardPage";
 import AllocatorPage from "./pages/AllocatorPage";
 import AdvisorPage from "./pages/AdvisorPage";
@@ -46,6 +50,10 @@ export default function App() {
       <Route path="/forgot-password" element={<ForgotPasswordPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />
       <Route path="/verify-email" element={<VerifyEmailPage />} />
+      <Route path="/privacy" element={<PrivacyPolicyPage />} />
+      <Route path="/terms" element={<TermsConditionsPage />} />
+      <Route path="/refund" element={<RefundPolicyPage />} />
+      <Route path="/contact" element={<ContactUsPage />} />
       <Route
         path="/"
         element={
