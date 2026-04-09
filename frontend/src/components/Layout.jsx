@@ -35,7 +35,7 @@ const NAV = [
   {
     to: "/allocator",
     icon: SlidersHorizontal,
-    label: "Allocator",
+    label: "Basic Allocator",
     min: "free",
   },
   { to: "/advisor", icon: MessageCircle, label: "AI Advisor", min: "free" },
@@ -45,6 +45,12 @@ const NAV = [
   { to: "/expenses", icon: CreditCard, label: "Expenses", min: "pro" },
   { to: "/bank", icon: Landmark, label: "Bank Accounts", min: "pro" },
   { section: "Premium" },
+  {
+    to: "/allocator-advanced",
+    icon: SlidersHorizontal,
+    label: "Advanced Allocator",
+    min: "premium",
+  },
   { to: "/budgets", icon: Target, label: "Budgets", min: "premium" },
   { to: "/tax", icon: Calculator, label: "Tax Calculator", min: "premium" },
   { to: "/portfolio", icon: TrendingUp, label: "Portfolio", min: "premium" },

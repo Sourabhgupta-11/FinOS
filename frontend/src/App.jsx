@@ -12,7 +12,8 @@ import TermsConditionsPage from "./pages/TermsConditionsPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import ContactUsPage from "./pages/ContactUsPage";
 import DashboardPage from "./pages/DashboardPage";
-import AllocatorPage from "./pages/AllocatorPage";
+import BasicAllocatorPage from "./pages/BasicAllocatorPage";
+import AdvancedAllocatorPage from "./pages/AdvancedAllocatorPage";
 import AdvisorPage from "./pages/AdvisorPage";
 import SimulatorPage from "./pages/SimulatorPage";
 import HistoryPage from "./pages/HistoryPage";
@@ -63,7 +64,8 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route path="allocator" element={<AllocatorPage />} />
+        <Route path="allocator" element={<BasicAllocatorPage />} />
+        <Route path="allocator-advanced" element={<AdvancedAllocatorPage />} />
         <Route path="advisor" element={<AdvisorPage />} />
         <Route path="simulator" element={<SimulatorPage />} />
         <Route path="portfolio" element={<PortfolioPage />} />

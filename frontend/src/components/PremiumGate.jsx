@@ -9,7 +9,7 @@ const PLAN_INFO = {
     badge: "bg-blue-600",
     name: "Pro",
     price: "₹99/month",
-    desc: "Unlock expense tracking, bank accounts, tax calculator, budgets and more.",
+    desc: "Unlock expense tracking, bank accounts, simulator, transaction history and more.",
   },
   premium: {
     icon: Crown,
@@ -18,7 +18,7 @@ const PLAN_INFO = {
     badge: "bg-amber-500",
     name: "Premium",
     price: "₹199/month",
-    desc: "Unlock portfolio tracker with live NSE/BSE prices and all Pro features.",
+    desc: "Unlock advanced allocator, tax calculator, budgets, portfolio tracker with live NSE/BSE prices and all Pro features.",
   },
 };
 
