@@ -137,3 +137,61 @@ module.exports = {
   sendSIPReminderEmail,
   sendBudgetAlertEmail,
 };
+
+// ─── New account created notification ────────────────────────────────────────
+async function sendWelcomeEmail(user) {
+  await sendEmail({
+    to: user.email,
+    subject: '🎉 Welcome to FinOS — your account is ready!',
+    html: baseTemplate('Your account is activated!', `
+      <p>Hi ${user.name},</p>
+      <p>Your FinOS account is now active. You can start managing your finances with AI-powered tools.</p>
+      <ul style="color:#6b7280;line-height:2">
+        <li>📊 Track expenses & budgets</li>
+        <li>💰 Portfolio & Net Worth tracker</li>
+        <li>🤖 AI Financial Advisor</li>
+        <li>📈 Investment Allocator</li>
+      </ul>
+      <a href="${APP_URL}" class="btn">Open FinOS Dashboard</a>
+    `),
+  });
+}
+
+// ─── Password changed notification ───────────────────────────────────────────
+async function sendPasswordChangedEmail(user) {
+  await sendEmail({
+    to: user.email,
+    subject: '🔐 Your FinOS password was changed',
+    html: baseTemplate('Password changed', `
+      <p>Hi ${user.name},</p>
+      <p>Your FinOS account password was successfully changed.</p>
+      <p>If you did not make this change, please <a href="${APP_URL}/forgot-password" style="color:#2563eb">reset your password immediately</a> and contact support.</p>
+      <p style="color:#9ca3af;font-size:13px">This notification was sent for your security.</p>
+    `),
+  });
+}
+
+// ─── Login from new device (optional future use) ──────────────────────────────
+async function sendLoginAlertEmail(user, { ip, time } = {}) {
+  await sendEmail({
+    to: user.email,
+    subject: '🔔 New sign-in to your FinOS account',
+    html: baseTemplate('New sign-in detected', `
+      <p>Hi ${user.name},</p>
+      <p>A new sign-in to your account was detected${time ? ` at ${time}` : ''}${ip ? ` from IP ${ip}` : ''}.</p>
+      <p>If this was you, no action is needed. If not, please <a href="${APP_URL}/forgot-password" style="color:#2563eb">reset your password</a> immediately.</p>
+    `),
+  });
+}
+
+module.exports = {
+  sendEmail,
+  sendVerificationEmail,
+  sendPasswordResetEmail,
+  sendSubscriptionConfirmEmail,
+  sendSIPReminderEmail,
+  sendBudgetAlertEmail,
+  sendWelcomeEmail,
+  sendPasswordChangedEmail,
+  sendLoginAlertEmail,
+};
