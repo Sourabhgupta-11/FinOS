@@ -141,8 +141,12 @@ function generateAlerts(alloc, salary, efMonths, hasInsurance) {
 async function allocateSalary(req, res, next) {
   try {
     const errors = validationResult(req);
-    if (!errors.isEmpty())
-      return res.status(400).json({ errors: errors.array() });
+    if (!errors.isEmpty()) {
+      const error = errors.array()[0];
+      return res.status(400).json({
+        error: `${error.param}: ${error.msg}`,
+      });
+    }
 
     const {
       salary,

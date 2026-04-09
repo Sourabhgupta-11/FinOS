@@ -355,17 +355,42 @@ export default function AdvancedAllocatorPage() {
     setError("");
     setLoading(true);
     try {
+      // Validate inputs
+      const salaryNum = parseFloat(form.salary);
+      const ageNum = parseInt(form.age);
+
+      if (!salaryNum || salaryNum < 1000) {
+        setError("Salary must be at least ₹1,000");
+        setLoading(false);
+        return;
+      }
+
+      if (!ageNum || ageNum < 18 || ageNum > 80) {
+        setError("Age must be between 18 and 80");
+        setLoading(false);
+        return;
+      }
+
       const goalCtx = buildGoalContext(form.goal, goalDetails);
-      const res = await api.post("/finance/allocate", {
-        ...form,
-        salary: parseFloat(form.salary),
-        age: parseInt(form.age),
-        monthlyExpenses: form.monthlyExpenses
-          ? parseFloat(form.monthlyExpenses)
-          : undefined,
+      const requestData = {
+        salary: salaryNum,
+        age: ageNum,
+        riskLevel: form.riskLevel,
+        goal: form.goal,
+        hasInsurance: form.hasInsurance,
         emergencyFundMonths: parseInt(form.emergencyFundMonths),
-        goalContext: goalCtx,
-      });
+      };
+
+      // Only include monthlyExpenses if provided
+      if (form.monthlyExpenses && form.monthlyExpenses.trim()) {
+        requestData.monthlyExpenses = parseFloat(form.monthlyExpenses);
+      }
+
+      if (goalCtx) {
+        requestData.goalContext = goalCtx;
+      }
+
+      const res = await api.post("/finance/allocate", requestData);
       setResult(res.data);
       setStep(3);
       window.scrollTo({ top: 0, behavior: "smooth" });

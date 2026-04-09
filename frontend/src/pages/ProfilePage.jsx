@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import api from "../utils/api";
 import { Camera, Lock, Mail, User, Check, AlertCircle } from "lucide-react";
@@ -51,9 +51,30 @@ export default function ProfilePage() {
   const [pw, setPw] = useState({ current: "", newPw: "", confirm: "" });
   const [pwStatus, setPwStatus] = useState({ type: "", msg: "" });
   const [savingPw, setSavingPw] = useState(false);
+  const [hasPassword, setHasPassword] = useState(true); // Assume has password initially
+  const [checkingPassword, setCheckingPassword] = useState(true); // Check on mount
 
   // Delete account
   const [isDeleting, setIsDeleting] = useState(false);
+
+  // Check if user has password set
+  useEffect(() => {
+    const checkPasswordStatus = async () => {
+      try {
+        const response = await api.get("/auth/me");
+        const userData = response.data;
+        // has_password is set in auth controller
+        setHasPassword(userData.has_password !== false);
+      } catch (err) {
+        // If we can't determine, assume they have a password
+        setHasPassword(true);
+      } finally {
+        setCheckingPassword(false);
+      }
+    };
+
+    checkPasswordStatus();
+  }, []);
 
   const initials = name
     .split(" ")
@@ -112,7 +133,43 @@ export default function ProfilePage() {
     }
   };
 
-  const savePassword = async () => {
+  const setPassword = async () => {
+    if (!pw.newPw || !pw.confirm) {
+      setPwStatus({ type: "error", msg: "Both fields are required" });
+      return;
+    }
+    if (pw.newPw !== pw.confirm) {
+      setPwStatus({ type: "error", msg: "Passwords do not match" });
+      return;
+    }
+    if (pw.newPw.length < 8) {
+      setPwStatus({
+        type: "error",
+        msg: "Password must be at least 8 characters",
+      });
+      return;
+    }
+
+    setSavingPw(true);
+    setPwStatus({ type: "", msg: "" });
+    try {
+      await api.put("/auth/password/set", {
+        newPassword: pw.newPw,
+      });
+      setPwStatus({ type: "success", msg: "Password set successfully!" });
+      setPw({ current: "", newPw: "", confirm: "" });
+      setHasPassword(true); // Update state to reflect password is now set
+    } catch (err) {
+      setPwStatus({
+        type: "error",
+        msg: err.response?.data?.error || "Failed to set password",
+      });
+    } finally {
+      setSavingPw(false);
+    }
+  };
+
+  const changePassword = async () => {
     if (!pw.current || !pw.newPw || !pw.confirm) {
       setPwStatus({ type: "error", msg: "All fields are required" });
       return;
@@ -128,20 +185,33 @@ export default function ProfilePage() {
       });
       return;
     }
+    if (pw.current === pw.newPw) {
+      setPwStatus({
+        type: "error",
+        msg: "New password must be different from current password",
+      });
+      return;
+    }
+
     setSavingPw(true);
     setPwStatus({ type: "", msg: "" });
     try {
-      await api.put("/auth/password", {
+      await api.put("/auth/password/change", {
         currentPassword: pw.current,
         newPassword: pw.newPw,
       });
       setPwStatus({ type: "success", msg: "Password changed successfully" });
       setPw({ current: "", newPw: "", confirm: "" });
     } catch (err) {
+      const error = err.response?.data?.error || "Failed to change password";
       setPwStatus({
         type: "error",
-        msg: err.response?.data?.error || "Failed to change password",
+        msg: error,
       });
+      // If the error indicates they don't have a password, update state
+      if (err.response?.data?.hasPassword === false) {
+        setHasPassword(false);
+      }
     } finally {
       setSavingPw(false);
     }
@@ -291,54 +361,104 @@ export default function ProfilePage() {
       </Section>
 
       {/* Password */}
-      <Section title="Change Password">
-        <div className="space-y-3">
-          {[
-            {
-              key: "current",
-              label: "Current password",
-              placeholder: "••••••••",
-            },
-            {
-              key: "newPw",
-              label: "New password (min 8 chars)",
-              placeholder: "••••••••",
-            },
-            {
-              key: "confirm",
-              label: "Confirm new password",
-              placeholder: "••••••••",
-            },
-          ].map(({ key, label, placeholder }) => (
-            <div key={key}>
-              <label className="label">{label}</label>
-              <div className="relative">
-                <Lock
-                  size={15}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                />
-                <input
-                  className="input pl-9"
-                  type="password"
-                  placeholder={placeholder}
-                  value={pw[key]}
-                  onChange={(e) =>
-                    setPw((p) => ({ ...p, [key]: e.target.value }))
-                  }
-                />
+      {!checkingPassword && (
+        <Section title={hasPassword ? "Change Password" : "Set Your Password"}>
+          <div className="space-y-3">
+            {!hasPassword && (
+              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/40 rounded-xl p-3 text-sm text-blue-700 dark:text-blue-300">
+                You signed up with Google. Set a password to access your account
+                with email & password.
               </div>
-            </div>
-          ))}
-          <StatusMsg {...pwStatus} />
-          <button
-            onClick={savePassword}
-            disabled={savingPw}
-            className="btn-primary w-full text-sm"
-          >
-            {savingPw ? "Changing password…" : "Change password"}
-          </button>
-        </div>
-      </Section>
+            )}
+
+            {hasPassword &&
+              [
+                {
+                  key: "current",
+                  label: "Current password",
+                  placeholder: "••••••••",
+                },
+                {
+                  key: "newPw",
+                  label: "New password (min 8 chars)",
+                  placeholder: "••••••••",
+                },
+                {
+                  key: "confirm",
+                  label: "Confirm new password",
+                  placeholder: "••••••••",
+                },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="label">{label}</label>
+                  <div className="relative">
+                    <Lock
+                      size={15}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      className="input pl-9"
+                      type="password"
+                      placeholder={placeholder}
+                      value={pw[key]}
+                      onChange={(e) =>
+                        setPw((p) => ({ ...p, [key]: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+              ))}
+
+            {!hasPassword &&
+              [
+                {
+                  key: "newPw",
+                  label: "New password (min 8 chars)",
+                  placeholder: "••••••••",
+                },
+                {
+                  key: "confirm",
+                  label: "Confirm password",
+                  placeholder: "••••••••",
+                },
+              ].map(({ key, label, placeholder }) => (
+                <div key={key}>
+                  <label className="label">{label}</label>
+                  <div className="relative">
+                    <Lock
+                      size={15}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+                    />
+                    <input
+                      className="input pl-9"
+                      type="password"
+                      placeholder={placeholder}
+                      value={pw[key]}
+                      onChange={(e) =>
+                        setPw((p) => ({ ...p, [key]: e.target.value }))
+                      }
+                    />
+                  </div>
+                </div>
+              ))}
+
+            <StatusMsg {...pwStatus} />
+            <button
+              onClick={hasPassword ? changePassword : setPassword}
+              disabled={savingPw}
+              className="btn-primary w-full text-sm"
+            >
+              {savingPw
+                ? hasPassword
+                  ? "Changing password…"
+                  : "Setting password…"
+                : hasPassword
+                  ? "Change password"
+                  : "Set password"}
+            </button>
+          </div>
+        </Section>
+      )}
 
       {/* Danger zone */}
       <div className="card border-red-100 dark:border-red-900/40">

@@ -54,16 +54,37 @@ export default function BasicAllocatorPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await api.post("/finance/allocate", {
-        ...form,
-        salary: parseFloat(form.salary),
-        age: parseInt(form.age),
-        monthlyExpenses: form.monthlyExpenses
-          ? parseFloat(form.monthlyExpenses)
-          : undefined,
+      // Validate inputs
+      const salaryNum = parseFloat(form.salary);
+      const ageNum = parseInt(form.age);
+
+      if (!salaryNum || salaryNum < 1000) {
+        setError("Salary must be at least ₹1,000");
+        setLoading(false);
+        return;
+      }
+
+      if (!ageNum || ageNum < 16 || ageNum > 90) {
+        setError("Age must be between 16 and 90");
+        setLoading(false);
+        return;
+      }
+
+      const requestData = {
+        salary: salaryNum,
+        age: ageNum,
+        riskLevel: form.riskLevel,
+        goal: "wealth",
+        hasInsurance: form.hasInsurance,
         emergencyFundMonths: parseInt(form.emergencyFundMonths),
-        goal: "wealth", // default goal for basic allocator
-      });
+      };
+
+      // Only include monthlyExpenses if provided
+      if (form.monthlyExpenses && form.monthlyExpenses.trim()) {
+        requestData.monthlyExpenses = parseFloat(form.monthlyExpenses);
+      }
+
+      const res = await api.post("/finance/allocate", requestData);
       setResult(res.data);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } catch (err) {

@@ -23,16 +23,19 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        const email = profile.emails?.[0]?.value;
+        const rawEmail = profile.emails?.[0]?.value;
         const name = profile.displayName;
         const googleId = profile.id;
 
-        if (!email)
+        if (!rawEmail)
           return done(new Error("No email returned from Google"), null);
 
-        // Check if user already exists with this email
+        // Normalize email: lowercase, trim whitespace
+        const email = rawEmail.toLowerCase().trim();
+
+        // Check if user already exists with this email (case-insensitive)
         const existing = await query(
-          "SELECT id, email, name, google_id, password_hash FROM users WHERE email = $1",
+          "SELECT id, email, name, google_id, password_hash FROM users WHERE LOWER(email) = LOWER($1)",
           [email],
         );
 
@@ -92,7 +95,7 @@ passport.use(
               );
               // Retry the lookup - the other request should have inserted by now
               const retryExisting = await query(
-                "SELECT id, email, name, google_id, password_hash FROM users WHERE email = $1",
+                "SELECT id, email, name, google_id, password_hash FROM users WHERE LOWER(email) = LOWER($1)",
                 [email],
               );
               if (retryExisting.rows[0]) {
