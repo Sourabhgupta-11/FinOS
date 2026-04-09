@@ -1,7 +1,13 @@
 const { query } = require("../db/pool");
-const lemonsqueezyService = require("../services/lemonsqueezy");
+const razorpayService = require("../services/razorpay");
 const emailService = require("../services/email");
 const logger = require("../utils/logger");
+
+// Plan mapping for Razorpay
+const PLAN_AMOUNTS = {
+  pro: 99900, // Rs. 999 in paise per month
+  premium: 199900, // Rs. 1999 in paise per month
+};
 
 // Ensure a subscription row always exists for the user
 async function ensureSubscriptionRow(userId) {
@@ -35,10 +41,8 @@ async function createSubscription(req, res, next) {
     const { planType = "premium" } = req.body;
     await ensureSubscriptionRow(req.user.id);
 
-    const variantId = lemonsqueezyService.getVariantIdForPlan(planType);
-
-    // Demo mode — no Lemonsqueezy configured
-    if (!process.env.LEMONSQUEEZY_API_KEY || !variantId) {
+    // Demo mode — no Razorpay configured
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_PLAN_ID) {
       const now = new Date();
       const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
       await query(
@@ -59,29 +63,52 @@ async function createSubscription(req, res, next) {
       });
     }
 
-    // Create a Lemonsqueezy checkout URL
-    const checkoutURL = await lemonsqueezyService.createCheckoutURL(
-      req.user.id,
-      variantId,
-      req.user.email,
-      req.user.name,
+    // Get or create customer
+    const { rows: userRows } = await query(
+      "SELECT * FROM users WHERE id = $1",
+      [req.user.id],
+    );
+    const user = userRows[0];
+
+    let customerId;
+    const { rows: subRows } = await query(
+      "SELECT razorpay_customer_id FROM subscriptions WHERE user_id = $1",
+      [req.user.id],
     );
 
-    // Store pending subscription info (we'll update it when webhook is received)
+    if (subRows[0]?.razorpay_customer_id) {
+      customerId = subRows[0].razorpay_customer_id;
+    } else {
+      const customer = await razorpayService.createCustomer(
+        user.name || "Valued Customer",
+        user.email,
+        user.phone || "",
+      );
+      customerId = customer.id;
+    }
+
+    // Create subscription with Razorpay
+    const subscription = await razorpayService.createSubscription(customerId);
+
+    // Store subscription info (we'll update it when webhook is received)
     await query(
       `UPDATE subscriptions SET
-         lemonsqueezy_plan_type=$1, status='pending', payment_provider='lemonsqueezy', updated_at=NOW()
-       WHERE user_id=$2`,
-      [planType, req.user.id],
+         razorpay_customer_id=$1, razorpay_subscription_id=$2, 
+         plan=$3, status='pending', payment_provider='razorpay', updated_at=NOW()
+       WHERE user_id=$4`,
+      [customerId, subscription.id, planType, req.user.id],
     );
 
     res.json({
-      checkoutURL,
+      subscriptionId: subscription.id,
       planType,
-      amount: planType === "pro" ? 9900 : 19900, // in paise
+      amount: PLAN_AMOUNTS[planType],
       currency: "INR",
+      status: subscription.status,
+      short_url: subscription.short_url || null,
     });
   } catch (err) {
+    logger.error("Error creating subscription:", err);
     next(err);
   }
 }
@@ -102,12 +129,12 @@ async function cancelSubscription(req, res, next) {
         .json({ error: "No active paid subscription found" });
     }
 
-    // Cancel on Lemonsqueezy if linked
-    if (sub.lemonsqueezy_subscription_id) {
-      await lemonsqueezyService
-        .cancelSubscription(sub.lemonsqueezy_subscription_id)
+    // Cancel on Razorpay if linked
+    if (sub.razorpay_subscription_id) {
+      await razorpayService
+        .cancelSubscription(sub.razorpay_subscription_id)
         .catch((err) => {
-          logger.warn("Lemonsqueezy cancel failed (non-fatal):", err.message);
+          logger.warn("Razorpay cancel failed (non-fatal):", err.message);
         });
     }
 
@@ -127,25 +154,24 @@ async function cancelSubscription(req, res, next) {
 
 async function handleWebhook(req, res, next) {
   try {
-    const signature = req.headers["x-signature"];
+    const signature = req.headers["x-razorpay-signature"];
     const rawBody = Buffer.isBuffer(req.body)
       ? req.body.toString()
       : JSON.stringify(req.body);
 
     if (
       signature &&
-      !lemonsqueezyService.verifyWebhookSignature(rawBody, signature)
+      !razorpayService.verifyWebhookSignature(rawBody, signature)
     ) {
       logger.warn("Invalid webhook signature");
       return res.status(401).json({ error: "Invalid signature" });
     }
 
     const parsed = Buffer.isBuffer(req.body) ? JSON.parse(rawBody) : req.body;
-    const { meta, data } = parsed;
-    const eventType = meta?.event_name;
-    const eventId = meta?.custom_data?.event_id || `${eventType}-${Date.now()}`;
+    const { event, payload } = parsed;
+    const eventId = payload?.subscription?.id || `${event}-${Date.now()}`;
 
-    logger.info(`Received Lemonsqueezy webhook: ${eventType}`);
+    logger.info(`Received Razorpay webhook: ${event}`);
 
     // Idempotency check
     const existing = await query(
@@ -160,20 +186,32 @@ async function handleWebhook(req, res, next) {
     // Store the webhook event
     await query(
       "INSERT INTO webhook_events (provider, event_id, event_type, payload) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING",
-      ["lemonsqueezy", eventId, eventType, parsed],
+      ["razorpay", eventId, event, parsed],
     ).catch(() => {});
 
     // Handle subscription events
-    if (eventType === "subscription_created") {
-      await handleSubscriptionCreated(data);
-    } else if (eventType === "subscription_updated") {
-      await handleSubscriptionUpdated(data);
-    } else if (eventType === "subscription_payment_success") {
-      await handlePaymentSuccess(data);
-    } else if (eventType === "subscription_payment_failed") {
-      await handlePaymentFailed(data);
-    } else if (eventType === "subscription_cancelled") {
-      await handleSubscriptionCancelled(data);
+    if (event === "subscription.created") {
+      await handleSubscriptionCreated(payload);
+    } else if (event === "subscription.activated") {
+      await handleSubscriptionActivated(payload);
+    } else if (event === "subscription.updated") {
+      await handleSubscriptionUpdated(payload);
+    } else if (event === "subscription.paused") {
+      await handleSubscriptionPaused(payload);
+    } else if (event === "subscription.resumed") {
+      await handleSubscriptionResumed(payload);
+    } else if (event === "subscription.cancelled") {
+      await handleSubscriptionCancelled(payload);
+    } else if (event === "subscription.ended") {
+      await handleSubscriptionEnded(payload);
+    } else if (event === "subscription.pending") {
+      await handleSubscriptionPending(payload);
+    } else if (event === "payment.authorized") {
+      await handlePaymentAuthorized(payload);
+    } else if (event === "payment.captured") {
+      await handlePaymentCaptured(payload);
+    } else if (event === "payment.failed") {
+      await handlePaymentFailed(payload);
     }
 
     // Mark webhook as processed
@@ -189,37 +227,86 @@ async function handleWebhook(req, res, next) {
   }
 }
 
-async function handleSubscriptionCreated(data) {
+async function handleSubscriptionCreated(payload) {
   try {
-    const attributes = data.attributes;
-    const customData = attributes.custom_data || {};
-    const userId = customData.customer_id;
-    const subscriptionId = data.id;
-    const variantId = attributes.variant_id;
-    const planType = lemonsqueezyService.getPlanTypeFromVariantId(variantId);
+    const subscription = payload.subscription;
+    const subscriptionId = subscription.id;
+    const customerId = subscription.customer_id;
+    const status = subscription.status;
 
-    if (!userId) {
-      logger.warn("No customer_id in custom_data:", data);
+    // Get user linked to this customer
+    const { rows } = await query(
+      "SELECT user_id FROM subscriptions WHERE razorpay_customer_id=$1",
+      [customerId],
+    );
+
+    if (!rows[0]) {
+      logger.warn("No user found for customer:", customerId);
       return;
     }
 
-    // Update subscription in DB
+    const userId = rows[0].user_id;
+
+    // Extract plan type from payload (or use default)
+    const planType = payload.notes?.plan_type || "premium";
+
     await query(
       `UPDATE subscriptions SET
-         lemonsqueezy_subscription_id=$1, lemonsqueezy_customer_id=$2,
-         lemonsqueezy_plan_type=$3, status='active', plan=$4,
+         razorpay_subscription_id=$1, razorpay_customer_id=$2,
+         plan=$3, status=$4,
          current_period_start=to_timestamp($5),
          current_period_end=to_timestamp($6),
          cancel_at_period_end=false, updated_at=NOW()
        WHERE user_id=$7`,
       [
         subscriptionId,
-        customData.customer_id || "lemonsqueezy_customer",
+        customerId,
         planType,
-        planType,
-        Math.floor(attributes.created_at),
-        Math.floor(new Date(attributes.renews_at).getTime() / 1000),
+        status,
+        Math.floor(subscription.created_at),
+        Math.floor(subscription.expire_by),
         userId,
+      ],
+    );
+
+    logger.info(
+      `Subscription created: ${subscriptionId} → ${planType} for user ${userId}`,
+    );
+  } catch (err) {
+    logger.error("Error handling subscription.created:", err);
+  }
+}
+
+async function handleSubscriptionActivated(payload) {
+  try {
+    const subscription = payload.subscription;
+    const subscriptionId = subscription.id;
+
+    const { rows } = await query(
+      "SELECT user_id FROM subscriptions WHERE razorpay_subscription_id=$1",
+      [subscriptionId],
+    );
+
+    if (!rows[0]) {
+      logger.warn("Subscription not found:", subscriptionId);
+      return;
+    }
+
+    const userId = rows[0].user_id;
+    const planType = payload.notes?.plan_type || "premium";
+
+    await query(
+      `UPDATE subscriptions SET
+         plan=$1, status='active',
+         current_period_start=to_timestamp($2),
+         current_period_end=to_timestamp($3),
+         cancel_at_period_end=false, updated_at=NOW()
+       WHERE razorpay_subscription_id=$4`,
+      [
+        planType,
+        Math.floor(subscription.created_at),
+        Math.floor(subscription.expire_by),
+        subscriptionId,
       ],
     );
 
@@ -234,102 +321,153 @@ async function handleSubscriptionCreated(data) {
         .catch(() => {});
     }
 
-    logger.info(
-      `Subscription created: ${subscriptionId} → ${planType} for user ${userId}`,
-    );
+    logger.info(`Subscription activated: ${subscriptionId} → active`);
   } catch (err) {
-    logger.error("Error handling subscription_created:", err);
+    logger.error("Error handling subscription.activated:", err);
   }
 }
 
-async function handleSubscriptionUpdated(data) {
+async function handleSubscriptionUpdated(payload) {
   try {
-    const attributes = data.attributes;
-    const subscriptionId = data.id;
-    const variantId = attributes.variant_id;
-    const planType = lemonsqueezyService.getPlanTypeFromVariantId(variantId);
+    const subscription = payload.subscription;
+    const subscriptionId = subscription.id;
+    const planType = payload.notes?.plan_type || "premium";
 
     await query(
       `UPDATE subscriptions SET
-         lemonsqueezy_plan_type=$1, plan=$2,
+         plan=$1, status=$2,
          current_period_start=to_timestamp($3),
          current_period_end=to_timestamp($4),
          updated_at=NOW()
-       WHERE lemonsqueezy_subscription_id=$5`,
+       WHERE razorpay_subscription_id=$5`,
       [
         planType,
-        planType,
-        Math.floor(attributes.created_at),
-        Math.floor(new Date(attributes.renews_at).getTime() / 1000),
+        subscription.status,
+        Math.floor(subscription.created_at),
+        Math.floor(subscription.expire_by),
         subscriptionId,
       ],
     );
 
-    logger.info(`Subscription updated: ${subscriptionId} → ${planType}`);
+    logger.info(
+      `Subscription updated: ${subscriptionId} → ${subscription.status}`,
+    );
   } catch (err) {
-    logger.error("Error handling subscription_updated:", err);
+    logger.error("Error handling subscription.updated:", err);
   }
 }
 
-async function handlePaymentSuccess(data) {
+async function handleSubscriptionPaused(payload) {
   try {
-    const subscriptionId = data.relationships?.subscription?.data?.id;
+    const subscriptionId = payload.subscription.id;
+    await query(
+      `UPDATE subscriptions SET status='paused', updated_at=NOW() 
+       WHERE razorpay_subscription_id=$1`,
+      [subscriptionId],
+    );
+    logger.info(`Subscription paused: ${subscriptionId}`);
+  } catch (err) {
+    logger.error("Error handling subscription.paused:", err);
+  }
+}
 
-    if (!subscriptionId) {
-      logger.warn("No subscription ID in payment_success event");
-      return;
-    }
+async function handleSubscriptionResumed(payload) {
+  try {
+    const subscription = payload.subscription;
+    const subscriptionId = subscription.id;
+    const planType = payload.notes?.plan_type || "premium";
 
-    // Update subscription status to active
+    await query(
+      `UPDATE subscriptions SET 
+         plan=$1, status='active', 
+         current_period_end=to_timestamp($2),
+         updated_at=NOW()
+       WHERE razorpay_subscription_id=$3`,
+      [planType, Math.floor(subscription.expire_by), subscriptionId],
+    );
+    logger.info(`Subscription resumed: ${subscriptionId}`);
+  } catch (err) {
+    logger.error("Error handling subscription.resumed:", err);
+  }
+}
+
+async function handleSubscriptionCancelled(payload) {
+  try {
+    const subscriptionId = payload.subscription.id;
+
     await query(
       `UPDATE subscriptions SET
-         status='active', cancel_at_period_end=false, updated_at=NOW()
-       WHERE lemonsqueezy_subscription_id=$1`,
+         plan='free', status='cancelled', cancel_at_period_end=false, updated_at=NOW()
+       WHERE razorpay_subscription_id=$1`,
       [subscriptionId],
     );
 
-    logger.info(`Payment successful for subscription: ${subscriptionId}`);
+    logger.info(`Subscription cancelled: ${subscriptionId}`);
   } catch (err) {
-    logger.error("Error handling subscription_payment_success:", err);
+    logger.error("Error handling subscription.cancelled:", err);
   }
 }
 
-async function handlePaymentFailed(data) {
+async function handleSubscriptionEnded(payload) {
   try {
-    const subscriptionId = data.relationships?.subscription?.data?.id;
-
-    if (!subscriptionId) {
-      logger.warn("No subscription ID in payment_failed event");
-      return;
-    }
-
-    logger.warn(`Payment failed for subscription: ${subscriptionId}`);
-    // Optionally mark subscription as needs attention
-  } catch (err) {
-    logger.error("Error handling subscription_payment_failed:", err);
-  }
-}
-
-async function handleSubscriptionCancelled(data) {
-  try {
-    const subscriptionId = data.id;
-    const attributes = data.attributes;
-
-    let newStatus = "cancelled";
-    if (attributes.ended_at) {
-      newStatus = "expired";
-    }
+    const subscriptionId = payload.subscription.id;
 
     await query(
       `UPDATE subscriptions SET
-         plan='free', status=$1, cancel_at_period_end=false, updated_at=NOW()
-       WHERE lemonsqueezy_subscription_id=$2`,
-      [newStatus, subscriptionId],
+         plan='free', status='expired', cancel_at_period_end=false, updated_at=NOW()
+       WHERE razorpay_subscription_id=$1`,
+      [subscriptionId],
     );
 
-    logger.info(`Subscription cancelled: ${subscriptionId} → ${newStatus}`);
+    logger.info(`Subscription ended: ${subscriptionId}`);
   } catch (err) {
-    logger.error("Error handling subscription_cancelled:", err);
+    logger.error("Error handling subscription.ended:", err);
+  }
+}
+
+async function handleSubscriptionPending(payload) {
+  try {
+    const subscription = payload.subscription;
+    const subscriptionId = subscription.id;
+    const planType = payload.notes?.plan_type || "premium";
+
+    await query(
+      `UPDATE subscriptions SET
+         plan=$1, status='pending', updated_at=NOW()
+       WHERE razorpay_subscription_id=$2`,
+      [planType, subscriptionId],
+    );
+
+    logger.info(`Subscription pending: ${subscriptionId}`);
+  } catch (err) {
+    logger.error("Error handling subscription.pending:", err);
+  }
+}
+
+async function handlePaymentAuthorized(payload) {
+  try {
+    const payment = payload.payment;
+    logger.info(`Payment authorized: ${payment.id}`);
+  } catch (err) {
+    logger.error("Error handling payment.authorized:", err);
+  }
+}
+
+async function handlePaymentCaptured(payload) {
+  try {
+    const payment = payload.payment;
+    logger.info(`Payment captured: ${payment.id}`);
+  } catch (err) {
+    logger.error("Error handling payment.captured:", err);
+  }
+}
+
+async function handlePaymentFailed(payload) {
+  try {
+    const payment = payload.payment;
+    logger.warn(`Payment failed: ${payment.id} - ${payment.error_description}`);
+  } catch (err) {
+    logger.error("Error handling payment.failed:", err);
   }
 }
 
