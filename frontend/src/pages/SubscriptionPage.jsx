@@ -422,7 +422,7 @@ export default function SubscriptionPage() {
 
       <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-gray-400 dark:text-gray-600">
         <span className="flex items-center gap-1">
-          <Sparkles size={11} /> Secured by Lemonsqueezy
+          <Sparkles size={11} /> Secured by Razorpay
         </span>
         <span>·</span>
         <span>Cancel anytime</span>
