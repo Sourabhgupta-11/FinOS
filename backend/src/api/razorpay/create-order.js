@@ -65,7 +65,7 @@ async function createOrder(req, res, next) {
     }
 
     // Create Razorpay order
-    const receipt = `finos_${planType}_${req.user.id}_${Date.now()}`;
+    const receipt = `fn_${planType}_${Date.now().toString().slice(-10)}`;
     const order = await razorpayService.createOrder(
       PLAN_AMOUNTS[planType],
       "INR",

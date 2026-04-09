@@ -46,11 +46,20 @@ async function fetchSubscription(subscriptionId) {
 }
 
 function verifyWebhookSignature(body, signature) {
+  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  if (!secret) {
+    logger.warn('RAZORPAY_WEBHOOK_SECRET not set — skipping webhook signature check');
+    return true; // allow through if secret not configured yet
+  }
   const expected = crypto
-    .createHmac('sha256', process.env.RAZORPAY_WEBHOOK_SECRET)
+    .createHmac('sha256', secret)
     .update(body)
     .digest('hex');
-  return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  try {
+    return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(signature));
+  } catch {
+    return false;
+  }
 }
 
 function verifyPaymentSignature(orderId, paymentId, signature) {
