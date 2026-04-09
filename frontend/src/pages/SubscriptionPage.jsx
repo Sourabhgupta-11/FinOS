@@ -110,7 +110,7 @@ export default function SubscriptionPage() {
       const res = await api.post("/subscription", { planType: planKey });
       if (res.data.demo) {
         setSuccess(
-          `✓ ${planKey.charAt(0).toUpperCase() + planKey.slice(1)} plan activated (demo mode — configure Lemonsqueezy keys for live payments).`,
+          `✓ ${planKey.charAt(0).toUpperCase() + planKey.slice(1)} plan activated (demo mode — configure Razorpay keys for live payments).`,
         );
         setProcessing(null);
         setTimeout(() => window.location.reload(), 2000);
@@ -121,7 +121,7 @@ export default function SubscriptionPage() {
         setProcessing(null);
         return;
       }
-      // Redirect to Lemonsqueezy checkout
+      // Redirect to Razorpay checkout
       window.location.href = res.data.checkoutURL;
     } catch (err) {
       setError(
@@ -422,7 +422,7 @@ export default function SubscriptionPage() {
 
       <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-gray-400 dark:text-gray-600">
         <span className="flex items-center gap-1">
-          <Sparkles size={11} /> Secured by Lemonsqueezy
+          <Sparkles size={11} /> Secured by Razorpay
         </span>
         <span>·</span>
         <span>Cancel anytime</span>

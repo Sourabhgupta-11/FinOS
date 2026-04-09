@@ -11,7 +11,7 @@
 | Database           | PostgreSQL 15                      |
 | AI                 | Groq (Llama 3.3 70B) + RAG         |
 | Cache              | Redis                              |
-| Payments           | Lemonsqueezy                       |
+| Payments           | Razorpay                           |
 | Bank Linking       | Setu Account Aggregator            |
 | Push Notifications | Web Push (VAPID)                   |
 | Infrastructure     | AWS ECS Fargate + RDS + CloudFront |
