@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useAuth } from "./context/AuthContext";
 import Layout from "./components/Layout";
+import { FullScreenLoader } from "./components/Loader";
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import GoogleCallbackPage from "./pages/GoogleCallbackPage";
@@ -11,6 +12,7 @@ import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 import TermsConditionsPage from "./pages/TermsConditionsPage";
 import RefundPolicyPage from "./pages/RefundPolicyPage";
 import ContactUsPage from "./pages/ContactUsPage";
+import LandingPage from "./pages/LandingPage";
 import DashboardPage from "./pages/DashboardPage";
 import BasicAllocatorPage from "./pages/BasicAllocatorPage";
 import AdvancedAllocatorPage from "./pages/AdvancedAllocatorPage";
@@ -28,23 +30,15 @@ import ProfilePage from "./pages/ProfilePage";
 
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
-  if (loading)
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-950">
-        <div className="flex flex-col items-center gap-3">
-          <div className="w-10 h-10 border-3 border-blue-600 border-t-transparent rounded-full animate-spin" />
-          <div className="text-gray-400 dark:text-gray-600 text-sm">
-            Loading FinOS…
-          </div>
-        </div>
-      </div>
-    );
+  if (loading) return <FullScreenLoader label="Loading FinOS…" />;
   return user ? children : <Navigate to="/login" replace />;
 }
 
 export default function App() {
   return (
     <Routes>
+      {/* Public pages */}
+      <Route path="/home" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
       <Route path="/auth/callback" element={<GoogleCallbackPage />} />
@@ -55,6 +49,8 @@ export default function App() {
       <Route path="/terms" element={<TermsConditionsPage />} />
       <Route path="/refund" element={<RefundPolicyPage />} />
       <Route path="/contact" element={<ContactUsPage />} />
+
+      {/* Protected app */}
       <Route
         path="/"
         element={
