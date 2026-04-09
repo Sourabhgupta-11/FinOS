@@ -14,6 +14,11 @@ function getRazorpay() {
   return instance;
 }
 
+async function createOrder(amount, currency, receipt, notes = {}) {
+  const rp = getRazorpay();
+  return rp.orders.create({ amount, currency, receipt, notes });
+}
+
 async function createCustomer(name, email, phone) {
   const rp = getRazorpay();
   return rp.customers.create({ name, email, contact: phone || '' });
@@ -59,6 +64,7 @@ function verifyPaymentSignature(orderId, paymentId, signature) {
 
 module.exports = {
   getRazorpay,
+  createOrder,
   createCustomer,
   createSubscription,
   cancelSubscription,

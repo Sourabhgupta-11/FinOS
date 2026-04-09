@@ -97,17 +97,31 @@ export default function SubscriptionPage() {
   // We show "My Plan" info always at top, plans always visible for comparison/upgrade
 
   useEffect(() => {
-    // Lemonsqueezy handles checkout through redirect, no script needed
+    // Razorpay SDK is loaded on-demand when checkout is triggered
     return () => {};
   }, []);
+
+  const loadRazorpayScript = () =>
+    new Promise((resolve) => {
+      if (window.Razorpay) return resolve(true);
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
 
   const upgrade = async (planKey) => {
     if (planKey === "free") return;
     setError("");
     setSuccess("");
     setProcessing(planKey);
+
     try {
+      // Step 1: Create order on backend
       const res = await api.post("/subscription", { planType: planKey });
+
+      // Demo mode — no Razorpay keys configured
       if (res.data.demo) {
         setSuccess(
           `✓ ${planKey.charAt(0).toUpperCase() + planKey.slice(1)} plan activated (demo mode — configure Razorpay keys for live payments).`,
@@ -116,13 +130,67 @@ export default function SubscriptionPage() {
         setTimeout(() => window.location.reload(), 2000);
         return;
       }
-      if (!res.data.checkoutURL) {
-        setError("Could not generate checkout link. Please try again.");
+
+      // Step 2: Load Razorpay SDK
+      const loaded = await loadRazorpayScript();
+      if (!loaded) {
+        setError("Failed to load payment gateway. Please check your connection and try again.");
         setProcessing(null);
         return;
       }
-      // Redirect to Razorpay checkout
-      window.location.href = res.data.checkoutURL;
+
+      const plan = PLANS.find((p) => p.key === planKey);
+
+      // Step 3: Open Razorpay checkout modal
+      const options = {
+        key: res.data.keyId,
+        amount: res.data.amount,
+        currency: res.data.currency || "INR",
+        name: "FinOS",
+        description: `${plan?.name} Plan — Monthly`,
+        order_id: res.data.orderId,
+        prefill: {
+          name: res.data.userName,
+          email: res.data.userEmail,
+          contact: res.data.userPhone,
+        },
+        theme: { color: planKey === "premium" ? "#f59e0b" : "#2563eb" },
+        modal: {
+          ondismiss: () => {
+            setProcessing(null);
+          },
+        },
+        handler: async (paymentResponse) => {
+          // Step 4: Verify payment on backend
+          try {
+            const verifyRes = await api.post("/subscription/verify", {
+              razorpay_order_id: paymentResponse.razorpay_order_id,
+              razorpay_payment_id: paymentResponse.razorpay_payment_id,
+              razorpay_signature: paymentResponse.razorpay_signature,
+              planType: planKey,
+            });
+            setSuccess(`✓ ${verifyRes.data.message || `${plan?.name} plan activated!`}`);
+            setProcessing(null);
+            setTimeout(() => window.location.reload(), 2000);
+          } catch (err) {
+            setError(
+              err.response?.data?.error ||
+                "Payment was received but activation failed. Please contact support.",
+            );
+            setProcessing(null);
+          }
+        },
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on("payment.failed", (response) => {
+        setError(
+          response.error?.description ||
+            "Payment failed. Please try again or use a different payment method.",
+        );
+        setProcessing(null);
+      });
+      rzp.open();
     } catch (err) {
       setError(
         err.response?.data?.error ||

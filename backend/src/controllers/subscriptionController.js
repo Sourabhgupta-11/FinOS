@@ -42,7 +42,7 @@ async function createSubscription(req, res, next) {
     await ensureSubscriptionRow(req.user.id);
 
     // Demo mode — no Razorpay configured
-    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_PLAN_ID) {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
       const now = new Date();
       const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
       await query(
@@ -63,52 +63,92 @@ async function createSubscription(req, res, next) {
       });
     }
 
-    // Get or create customer
+    // Get user details
     const { rows: userRows } = await query(
       "SELECT * FROM users WHERE id = $1",
       [req.user.id],
     );
     const user = userRows[0];
 
-    let customerId;
-    const { rows: subRows } = await query(
-      "SELECT razorpay_customer_id FROM subscriptions WHERE user_id = $1",
-      [req.user.id],
+    // Create a Razorpay Order (one-time payment for the plan)
+    const order = await razorpayService.createOrder(
+      PLAN_AMOUNTS[planType],
+      "INR",
+      `finos_${planType}_${req.user.id}_${Date.now()}`,
+      { plan_type: planType, user_id: String(req.user.id) },
     );
 
-    if (subRows[0]?.razorpay_customer_id) {
-      customerId = subRows[0].razorpay_customer_id;
-    } else {
-      const customer = await razorpayService.createCustomer(
-        user.name || "Valued Customer",
-        user.email,
-        user.phone || "",
-      );
-      customerId = customer.id;
-    }
-
-    // Create subscription with Razorpay
-    const subscription = await razorpayService.createSubscription(customerId);
-
-    // Store subscription info (we'll update it when webhook is received)
+    // Store pending order info
     await query(
       `UPDATE subscriptions SET
-         razorpay_customer_id=$1, razorpay_subscription_id=$2, 
-         plan=$3, status='pending', payment_provider='razorpay', updated_at=NOW()
-       WHERE user_id=$4`,
-      [customerId, subscription.id, planType, req.user.id],
+         plan=$1, status='pending', payment_provider='razorpay',
+         razorpay_subscription_id=$2, updated_at=NOW()
+       WHERE user_id=$3`,
+      [planType, order.id, req.user.id],
     );
 
+    logger.info(`Razorpay order created: ${order.id} for ${planType}`);
+
     res.json({
-      subscriptionId: subscription.id,
+      orderId: order.id,
+      amount: order.amount,
+      currency: order.currency,
+      keyId: process.env.RAZORPAY_KEY_ID,
       planType,
-      amount: PLAN_AMOUNTS[planType],
-      currency: "INR",
-      status: subscription.status,
-      short_url: subscription.short_url || null,
+      userName: user.name || "Valued Customer",
+      userEmail: user.email,
+      userPhone: user.phone || "",
     });
   } catch (err) {
     logger.error("Error creating subscription:", err);
+    next(err);
+  }
+}
+
+async function verifyPayment(req, res, next) {
+  try {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, planType } = req.body;
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({ error: "Missing payment verification fields" });
+    }
+
+    // Verify signature
+    const isValid = razorpayService.verifyPaymentSignature(
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    );
+
+    if (!isValid) {
+      logger.warn(`Invalid payment signature for order ${razorpay_order_id}`);
+      return res.status(400).json({ error: "Payment verification failed. Please contact support." });
+    }
+
+    // Activate the subscription
+    const now = new Date();
+    const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
+
+    await query(
+      `UPDATE subscriptions SET
+         plan=$1, status='active',
+         current_period_start=$2, current_period_end=$3,
+         cancel_at_period_end=false, payment_provider='razorpay',
+         razorpay_subscription_id=$4, updated_at=NOW()
+       WHERE user_id=$5`,
+      [planType, now, end, razorpay_payment_id, req.user.id],
+    );
+
+    // Send confirmation email
+    const { rows: userRows } = await query("SELECT * FROM users WHERE id=$1", [req.user.id]);
+    if (userRows[0]) {
+      emailService.sendSubscriptionConfirmEmail(userRows[0], planType).catch(() => {});
+    }
+
+    logger.info(`Payment verified & subscription activated: ${planType} for user ${req.user.id}`);
+    res.json({ success: true, plan: planType, message: `${planType} plan activated successfully!` });
+  } catch (err) {
+    logger.error("Error verifying payment:", err);
     next(err);
   }
 }
@@ -474,6 +514,7 @@ async function handlePaymentFailed(payload) {
 module.exports = {
   getSubscription,
   createSubscription,
+  verifyPayment,
   cancelSubscription,
   handleWebhook,
 };

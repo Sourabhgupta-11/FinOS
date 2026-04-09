@@ -47,7 +47,7 @@ export default function PremiumGate({
         Upgrade to {info.name} — {info.price}
       </Link>
       <p className="text-xs text-gray-400 dark:text-gray-600 mt-3">
-        Cancel anytime · No hidden fees · Secured by Lemonsqueezy
+        Cancel anytime · No hidden fees · Secured by Razorpay
       </p>
     </div>
   );
