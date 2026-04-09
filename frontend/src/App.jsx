@@ -31,7 +31,7 @@ import ProfilePage from "./pages/ProfilePage";
 function ProtectedRoute({ children }) {
   const { user, loading } = useAuth();
   if (loading) return <FullScreenLoader label="Loading FinOS…" />;
-  return user ? children : <Navigate to="/login" replace />;
+  return user ? children : <Navigate to="/home" replace />;
 }
 
 export default function App() {

@@ -29,7 +29,7 @@ function StatusMsg({ type, msg }) {
 }
 
 export default function ProfilePage() {
-  const { user, logout } = useAuth();
+  const { user, setUser,logout } = useAuth();
   const fileRef = useRef();
 
   const [avatar, setAvatar] = useState(
@@ -96,42 +96,44 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
-  const saveName = async () => {
-    if (!name.trim()) return;
-    setSavingName(true);
-    setNameStatus({ type: "", msg: "" });
-    try {
-      await api.put("/auth/profile", { name: name.trim() });
-      setNameStatus({ type: "success", msg: "Name updated successfully" });
-    } catch (err) {
-      setNameStatus({
-        type: "error",
-        msg: err.response?.data?.error || "Failed to update name",
-      });
-    } finally {
-      setSavingName(false);
-    }
-  };
+const saveName = async () => {
+  if (!name.trim()) return;
+  setSavingName(true);
+  setNameStatus({ type: "", msg: "" });
+  try {
+    const res = await api.put("/auth/profile", { name: name.trim() });
+    setUser((prev) => ({ ...prev, name: res.data.name }));
+    setNameStatus({ type: "success", msg: "Name updated successfully" });
+  } catch (err) {
+    setNameStatus({
+      type: "error",
+      msg: err.response?.data?.error || "Failed to update name",
+    });
+  } finally {
+    setSavingName(false);
+  }
+};
 
-  const saveEmail = async () => {
-    if (!email.trim()) return;
-    setSavingEmail(true);
-    setEmailStatus({ type: "", msg: "" });
-    try {
-      await api.put("/auth/profile", { email: email.trim() });
-      setEmailStatus({
-        type: "success",
-        msg: "Email updated. Please verify your new email.",
-      });
-    } catch (err) {
-      setEmailStatus({
-        type: "error",
-        msg: err.response?.data?.error || "Failed to update email",
-      });
-    } finally {
-      setSavingEmail(false);
-    }
-  };
+const saveEmail = async () => {
+  if (!email.trim()) return;
+  setSavingEmail(true);
+  setEmailStatus({ type: "", msg: "" });
+  try {
+    const res = await api.put("/auth/profile", { email: email.trim() });
+    setUser((prev) => ({ ...prev, email: res.data.email }));
+    setEmailStatus({
+      type: "success",
+      msg: "Email updated. Please verify your new email.",
+    });
+  } catch (err) {
+    setEmailStatus({
+      type: "error",
+      msg: err.response?.data?.error || "Failed to update email",
+    });
+  } finally {
+    setSavingEmail(false);
+  }
+};
 
   const setPassword = async () => {
     if (!pw.newPw || !pw.confirm) {
