@@ -1,6 +1,7 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../components/Logo";
+import { Crown, Zap, Check, X } from "lucide-react";
 
 // ─── Nav ──────────────────────────────────────────────────────────────────────
 function Navbar() {
@@ -20,8 +21,6 @@ function Navbar() {
           <Logo size={34} />
           <span className="text-xl font-black tracking-tight text-gray-900 dark:text-white">FinOS</span>
         </div>
-
-        {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
           {[["Features", "#features"], ["How it works", "#how"], ["Pricing", "#pricing"], ["Contact", "/contact"]].map(([label, href]) => (
             href.startsWith("#")
@@ -29,21 +28,16 @@ function Navbar() {
               : <Link key={label} to={href} className="text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">{label}</Link>
           ))}
         </div>
-
         <div className="hidden md:flex items-center gap-3">
           <Link to="/login" className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors">Sign in</Link>
           <Link to="/register" className="btn-primary text-sm px-5 py-2">Get started free →</Link>
         </div>
-
-        {/* Mobile menu button */}
         <button onClick={() => setMenuOpen(!menuOpen)} className="md:hidden text-gray-700 dark:text-gray-300 p-2">
           <div className={`w-5 h-0.5 bg-current mb-1 transition-all ${menuOpen ? "rotate-45 translate-y-1.5" : ""}`} />
           <div className={`w-5 h-0.5 bg-current mb-1 transition-all ${menuOpen ? "opacity-0" : ""}`} />
           <div className={`w-5 h-0.5 bg-current transition-all ${menuOpen ? "-rotate-45 -translate-y-1.5" : ""}`} />
         </button>
       </div>
-
-      {/* Mobile menu */}
       {menuOpen && (
         <div className="md:hidden bg-white dark:bg-gray-950 border-t border-gray-100 dark:border-gray-800 px-5 py-4 space-y-3">
           {[["Features", "#features"], ["How it works", "#how"], ["Pricing", "#pricing"]].map(([label, href]) => (
@@ -63,39 +57,28 @@ function Navbar() {
 function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-24 pb-16">
-      {/* Animated background mesh */}
       <div className="absolute inset-0 -z-10">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-400/20 dark:bg-blue-600/15 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "4s" }} />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-400/20 dark:bg-indigo-600/15 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "6s" }} />
         <div className="absolute top-1/2 left-1/2 w-64 h-64 bg-cyan-400/10 dark:bg-cyan-600/10 rounded-full blur-3xl animate-pulse" style={{ animationDuration: "5s" }} />
-        {/* Grid overlay */}
         <div className="absolute inset-0 opacity-[0.03] dark:opacity-[0.06]" style={{
           backgroundImage: `linear-gradient(rgba(59,130,246,1) 1px, transparent 1px), linear-gradient(90deg, rgba(59,130,246,1) 1px, transparent 1px)`,
           backgroundSize: "60px 60px"
         }} />
       </div>
-
       <div className="max-w-5xl mx-auto px-5 text-center">
-        {/* Badge */}
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-xs font-semibold mb-6 tracking-wide">
           <span className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse" />
           AI-POWERED FINANCE FOR INDIA
         </div>
-
         <h1 className="text-5xl md:text-7xl font-black tracking-tight text-gray-900 dark:text-white mb-6 leading-[1.05]">
           Your money,{" "}
-          <span className="relative">
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600">
-              intelligently
-            </span>
-          </span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600">intelligently</span>
           {" "}managed
         </h1>
-
         <p className="text-xl text-gray-500 dark:text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
           FinOS is an AI-powered operating system for your finances. Track expenses, grow investments, get personalized advice — all in one beautiful dashboard.
         </p>
-
         <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
           <Link to="/register" className="btn-primary text-base px-8 py-3.5 rounded-2xl shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 transition-shadow">
             Start for free — no card needed
@@ -104,15 +87,8 @@ function Hero() {
             See what's inside ↓
           </a>
         </div>
-
-        {/* Stats strip */}
         <div className="flex flex-col sm:flex-row gap-8 justify-center items-center pt-8 border-t border-gray-100 dark:border-gray-800">
-          {[
-            ["₹0", "Always free to start"],
-            ["10+", "Powerful finance tools"],
-            ["AI", "Smart advisor included"],
-            ["🔒", "Bank-grade security"],
-          ].map(([val, label]) => (
+          {[["₹0", "Always free to start"], ["10+", "Powerful finance tools"], ["AI", "Smart advisor included"], ["🔒", "Bank-grade security"]].map(([val, label]) => (
             <div key={label} className="text-center">
               <div className="text-2xl font-black text-gray-900 dark:text-white">{val}</div>
               <div className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">{label}</div>
@@ -124,17 +100,25 @@ function Hero() {
   );
 }
 
-// ─── Features grid ────────────────────────────────────────────────────────────
+// ─── Features ─────────────────────────────────────────────────────────────────
+// tag values: "Free" | "Pro" | "Premium"
+// badge colours: Free=emerald, Pro=blue, Premium=amber
 const FEATURES = [
-  { icon: "🤖", title: "AI Financial Advisor", desc: "Get personalized, context-aware advice tailored to your income, goals, and risk tolerance. Powered by advanced LLMs.", tag: "AI" },
-  { icon: "📊", title: "Investment Allocator", desc: "Auto-allocate your monthly savings across equity, debt, gold, and FDs based on your risk profile — basic or advanced.", tag: "Smart" },
-  { icon: "💼", title: "Portfolio Tracker", desc: "Track mutual funds, stocks, and assets in real time. See your net worth grow on a unified dashboard.", tag: "Premium" },
-  { icon: "🏦", title: "Bank Account Linking", desc: "Connect your bank accounts securely via Setu to auto-import transactions and get a complete picture of your finances.", tag: "Premium" },
-  { icon: "📈", title: "Decision Simulator", desc: "Model financial decisions before making them. What-if scenarios for loans, investments, and life changes.", tag: "Premium" },
-  { icon: "🧾", title: "Tax Calculator", desc: "Optimise your taxes under the new and old regimes. Get deductions, rebates, and insights specific to your income.", tag: "Free" },
-  { icon: "💳", title: "Expense Tracker", desc: "Categorise and analyse your spending. Set budgets, get alerts when you're overspending, and find savings.", tag: "Free" },
-  { icon: "📅", title: "Budget Manager", desc: "Create category-level budgets and get real-time alerts when you're approaching or exceeding limits.", tag: "Free" },
+  { icon: "🤖", title: "AI Financial Advisor",   desc: "Get personalized, context-aware advice tailored to your income, goals, and risk tolerance. Powered by advanced LLMs.", tag: "Free" },
+  { icon: "📊", title: "Investment Allocator",    desc: "Auto-allocate your monthly savings across equity, debt, gold, and FDs based on your risk profile — basic or advanced.", tag: "Free" },
+  { icon: "💼", title: "Portfolio Tracker",       desc: "Track mutual funds, stocks, and assets in real time. See your net worth grow on a unified dashboard.", tag: "Premium" },
+  { icon: "🏦", title: "Bank Account Linking",    desc: "Connect your bank accounts securely via Setu to auto-import transactions and get a complete picture of your finances.", tag: "Pro" },
+  { icon: "📈", title: "Decision Simulator",      desc: "Model financial decisions before making them. What-if scenarios for loans, investments, and life changes.", tag: "Pro" },
+  { icon: "🧾", title: "Tax Calculator",          desc: "Optimise your taxes under the new and old regimes. Get deductions, rebates, and insights specific to your income.", tag: "Premium" },
+  { icon: "💳", title: "Expense Tracker",         desc: "Categorise and analyse your spending. Set budgets, get alerts when you're overspending, and find savings.", tag: "Pro" },
+  { icon: "📅", title: "Budget Manager",          desc: "Create category-level budgets and get real-time alerts when you're approaching or exceeding limits.", tag: "Premium" },
 ];
+
+const TAG_STYLES = {
+  Free:    { bg: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300" },
+  Pro:     { bg: "bg-blue-100   dark:bg-blue-900/30   text-blue-700   dark:text-blue-300"   },
+  Premium: { bg: "bg-amber-100  dark:bg-amber-900/30  text-amber-700  dark:text-amber-300"  },
+};
 
 function Features() {
   return (
@@ -144,25 +128,21 @@ function Features() {
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-widest mb-4">
             Everything you need
           </div>
-          <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight mb-4">
-            A complete finance OS
-          </h2>
-          <p className="text-gray-500 dark:text-gray-400 text-lg max-w-xl mx-auto">
-            Every tool you need to take control of your money, in one place.
-          </p>
+          <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight mb-4">A complete finance OS</h2>
+          <p className="text-gray-500 dark:text-gray-400 text-lg max-w-xl mx-auto">Every tool you need to take control of your money, in one place.</p>
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-4 mt-6 flex-wrap">
+            {Object.entries(TAG_STYLES).map(([tag, { bg }]) => (
+              <span key={tag} className={`text-xs font-bold px-2.5 py-1 rounded-full ${bg}`}>{tag}</span>
+            ))}
+          </div>
         </div>
-
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
           {FEATURES.map((f) => (
             <div key={f.title} className="card-hover group cursor-default">
               <div className="flex items-start justify-between mb-4">
                 <span className="text-3xl">{f.icon}</span>
-                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                  f.tag === "Premium" ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300" :
-                  f.tag === "AI" ? "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300" :
-                  f.tag === "Smart" ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" :
-                  "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300"
-                }`}>{f.tag}</span>
+                <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${TAG_STYLES[f.tag].bg}`}>{f.tag}</span>
               </div>
               <h3 className="font-bold text-gray-900 dark:text-white mb-2 text-sm">{f.title}</h3>
               <p className="text-gray-500 dark:text-gray-400 text-xs leading-relaxed">{f.desc}</p>
@@ -193,7 +173,6 @@ function HowItWorks() {
           <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white tracking-tight mb-4">How FinOS works</h2>
           <p className="text-gray-500 dark:text-gray-400 text-lg">From sign-up to financial clarity in minutes.</p>
         </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {STEPS.map((step, i) => (
             <div key={step.num} className="relative">
@@ -216,10 +195,88 @@ function HowItWorks() {
 }
 
 // ─── Pricing ──────────────────────────────────────────────────────────────────
+const PLANS = [
+  {
+    key: "free",
+    name: "Free",
+    price: "₹0",
+    period: "forever",
+    icon: null,
+    borderClass: "border-2 border-gray-200 dark:border-gray-700",
+    headerColor: "text-gray-500 dark:text-gray-400",
+    checkColor: "text-emerald-500",
+    ctaClass: "btn-secondary",
+    ctaLabel: "Get started free",
+    features: [
+      { t: "Salary Allocator", ok: true },
+      { t: "AI Advisor (3 msg/day)", ok: true },
+      { t: "Financial Health Score", ok: true },
+      { t: "Net Worth Dashboard", ok: true },
+      { t: "Assets, Goals & Liabilities", ok: true },
+      { t: "Decision Simulator", ok: false },
+      { t: "Expense Tracker", ok: false },
+      { t: "Bank Account Linking", ok: false },
+      { t: "Tax Calculator", ok: false },
+      { t: "Budget Manager", ok: false },
+      { t: "Portfolio Tracker", ok: false },
+    ],
+  },
+  {
+    key: "pro",
+    name: "Pro",
+    price: "₹99",
+    period: "/month",
+    icon: Zap,
+    badge: "Best Value",
+    borderClass: "border-2 border-blue-500 dark:border-blue-500",
+    headerColor: "text-blue-600 dark:text-blue-400",
+    checkColor: "text-blue-500",
+    ctaClass: "bg-blue-600 text-white font-bold px-4 py-2.5 rounded-xl hover:bg-blue-700 active:scale-95 transition-all duration-150 cursor-pointer w-full text-center block",
+    ctaLabel: "Start Pro →",
+    glowClass: "shadow-lg shadow-blue-500/20",
+    features: [
+      { t: "Everything in Free", ok: true },
+      { t: "AI Advisor (50 msg/day)", ok: true },
+      { t: "Decision Simulator", ok: true },
+      { t: "Allocation History", ok: true },
+      { t: "Expense Tracker + CSV export", ok: true },
+      { t: "Bank Account Linking", ok: true },
+      { t: "Push Notifications", ok: true },
+      { t: "Chat History", ok: true },
+      { t: "Tax Calculator", ok: false },
+      { t: "Budget Manager", ok: false },
+      { t: "Portfolio Tracker", ok: false },
+    ],
+  },
+  {
+    key: "premium",
+    name: "Premium",
+    price: "₹199",
+    period: "/month",
+    icon: Crown,
+    badge: "All Features",
+    borderClass: "border-2 border-amber-500 dark:border-amber-500",
+    headerColor: "text-amber-600 dark:text-amber-400",
+    checkColor: "text-amber-500",
+    ctaClass: "bg-amber-500 text-white font-bold px-4 py-2.5 rounded-xl hover:bg-amber-600 active:scale-95 transition-all duration-150 cursor-pointer w-full text-center block",
+    ctaLabel: "Start Premium →",
+    glowClass: "shadow-lg shadow-amber-500/20",
+    features: [
+      { t: "Everything in Pro", ok: true },
+      { t: "Unlimited AI Advisor", ok: true },
+      { t: "Tax Calculator (Old vs New)", ok: true },
+      { t: "Budget Manager + Alerts", ok: true },
+      { t: "Portfolio Tracker (live NSE)", ok: true },
+      { t: "All Notifications", ok: true },
+      { t: "Priority support", ok: true },
+    ],
+  },
+];
+
 function Pricing() {
   return (
     <section id="pricing" className="py-24 bg-gray-50 dark:bg-gray-900/50">
-      <div className="max-w-4xl mx-auto px-5">
+      <div className="max-w-6xl mx-auto px-5">
         <div className="text-center mb-16">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 text-xs font-bold uppercase tracking-widest mb-4">
             Simple pricing
@@ -228,59 +285,64 @@ function Pricing() {
           <p className="text-gray-500 dark:text-gray-400 text-lg">No hidden fees. Cancel anytime.</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Free */}
-          <div className="card border-2 border-gray-200 dark:border-gray-700">
-            <div className="mb-6">
-              <div className="text-sm font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">Free forever</div>
-              <div className="flex items-baseline gap-1">
-                <span className="text-5xl font-black text-gray-900 dark:text-white">₹0</span>
-                <span className="text-gray-400">/month</span>
-              </div>
-            </div>
-            <ul className="space-y-3 mb-8">
-              {["Expense & budget tracking", "Tax calculator", "Investment allocator (basic)", "Transaction history", "Email & push notifications"].map(f => (
-                <li key={f} className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
-                  <span className="text-emerald-500 font-bold">✓</span> {f}
-                </li>
-              ))}
-            </ul>
-            <Link to="/register" className="btn-secondary w-full text-center block">Get started free</Link>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {PLANS.map((plan) => {
+            const Icon = plan.icon;
+            return (
+              <div key={plan.key} className={`card ${plan.borderClass} ${plan.glowClass || ""} relative overflow-hidden flex flex-col`}>
+                {/* Badge */}
+                {plan.badge && (
+                  <div className="absolute top-4 right-4">
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                      plan.key === "pro" ? "bg-blue-600 text-white" : "bg-amber-500 text-white"
+                    }`}>{plan.badge}</span>
+                  </div>
+                )}
 
-          {/* Premium */}
-          <div className="card border-2 border-blue-600 relative overflow-hidden">
-            <div className="absolute top-4 right-4">
-              <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-blue-600 text-white">MOST POPULAR</span>
-            </div>
-            <div className="absolute -bottom-8 -right-8 w-40 h-40 bg-blue-50 dark:bg-blue-950/30 rounded-full" />
-            <div className="relative">
-              <div className="mb-6">
-                <div className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-2">Premium</div>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-5xl font-black text-gray-900 dark:text-white">₹199</span>
-                  <span className="text-gray-400">/month</span>
+                {/* Decorative circle */}
+                {plan.key !== "free" && (
+                  <div className={`absolute -bottom-10 -right-10 w-40 h-40 rounded-full opacity-10 ${
+                    plan.key === "pro" ? "bg-blue-400" : "bg-amber-400"
+                  }`} />
+                )}
+
+                <div className="relative flex flex-col flex-1">
+                  {/* Header */}
+                  <div className="mb-6">
+                    <div className={`flex items-center gap-2 text-sm font-bold uppercase tracking-wider mb-2 ${plan.headerColor}`}>
+                      {Icon && <Icon size={15} />}
+                      {plan.name}
+                    </div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="text-5xl font-black text-gray-900 dark:text-white">{plan.price}</span>
+                      <span className="text-gray-400 text-sm">{plan.period}</span>
+                    </div>
+                  </div>
+
+                  {/* Features */}
+                  <ul className="space-y-2.5 mb-8 flex-1">
+                    {plan.features.map((f) => (
+                      <li key={f.t} className="flex items-center gap-2.5 text-sm">
+                        {f.ok
+                          ? <Check size={14} className={`${plan.checkColor} flex-shrink-0`} />
+                          : <X size={14} className="text-gray-300 dark:text-gray-600 flex-shrink-0" />
+                        }
+                        <span className={f.ok ? "text-gray-700 dark:text-gray-300" : "text-gray-400 dark:text-gray-600"}>{f.t}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {/* CTA */}
+                  <Link to="/register" className={plan.ctaClass}>{plan.ctaLabel}</Link>
                 </div>
               </div>
-              <ul className="space-y-3 mb-8">
-                {[
-                  "Everything in Free",
-                  "AI Advisor (unlimited chats)",
-                  "Decision Simulator",
-                  "Portfolio tracker",
-                  "Bank account linking",
-                  "Advanced allocator",
-                  "Priority support",
-                ].map(f => (
-                  <li key={f} className="flex items-center gap-2.5 text-sm text-gray-600 dark:text-gray-400">
-                    <span className="text-blue-500 font-bold">✓</span> {f}
-                  </li>
-                ))}
-              </ul>
-              <Link to="/register" className="btn-primary w-full text-center block shadow-lg shadow-blue-500/25">Start Premium trial →</Link>
-            </div>
-          </div>
+            );
+          })}
         </div>
+
+        <p className="text-center text-xs text-gray-400 dark:text-gray-500 mt-8">
+          All plans include a free trial period. No credit card required to sign up.
+        </p>
       </div>
     </section>
   );
@@ -305,9 +367,7 @@ function Testimonials() {
           {TESTIMONIALS.map((t) => (
             <div key={t.name} className="card-hover">
               <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xs font-black">
-                  {t.avatar}
-                </div>
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-xs font-black">{t.avatar}</div>
                 <div>
                   <div className="text-sm font-bold text-gray-900 dark:text-white">{t.name}</div>
                   <div className="text-xs text-gray-400 dark:text-gray-500">{t.role}</div>
@@ -326,30 +386,54 @@ function Testimonials() {
 // ─── CTA ─────────────────────────────────────────────────────────────────────
 function CTA() {
   return (
-    <section className="py-24 relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-br from-blue-600 via-indigo-600 to-blue-800" />
-      <div className="absolute inset-0 -z-10 opacity-10" style={{
-        backgroundImage: `linear-gradient(rgba(255,255,255,1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,1) 1px, transparent 1px)`,
-        backgroundSize: "40px 40px"
-      }} />
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-white/5 rounded-full blur-3xl" />
+    <section className="py-24" style={{ background: "linear-gradient(135deg, #1d4ed8 0%, #4f46e5 50%, #1e40af 100%)" }}>
+      {/* Grid pattern */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          backgroundImage: `linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px)`,
+          backgroundSize: "40px 40px",
+        }}
+      />
 
-      <div className="max-w-3xl mx-auto px-5 text-center relative">
-        <div className="text-5xl mb-6">₹</div>
-        <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-6">
+      <div className="max-w-3xl mx-auto px-5 text-center relative z-10">
+        {/* Icon */}
+        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-3xl backdrop-blur-sm">
+          ₹
+        </div>
+
+        <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-5">
           Take control of your financial future today
         </h2>
+
         <p className="text-blue-100 text-lg mb-10 leading-relaxed">
-          Join FinOS for free. No credit card, no commitment. Start making smarter decisions with AI on your side.
+          Join FinOS for free. No credit card, no commitment.<br />
+          Start making smarter decisions with AI on your side.
         </p>
+
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Link to="/register" className="bg-white text-blue-600 font-bold px-8 py-3.5 rounded-2xl hover:bg-blue-50 transition-colors shadow-xl">
+          <Link
+            to="/register"
+            className="bg-white text-blue-700 font-bold px-8 py-3.5 rounded-2xl hover:bg-blue-50 active:scale-95 transition-all duration-150 shadow-2xl shadow-black/30 text-base"
+          >
             Create free account →
           </Link>
-          <Link to="/login" className="border-2 border-white/40 text-white font-bold px-8 py-3.5 rounded-2xl hover:border-white/70 transition-colors">
+          <Link
+            to="/login"
+            className="border-2 border-white/60 text-white font-bold px-8 py-3.5 rounded-2xl hover:bg-white/10 active:scale-95 transition-all duration-150 text-base"
+          >
             Sign in
           </Link>
+        </div>
+
+        {/* Trust strip */}
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-12 pt-8 border-t border-white/20">
+          {["No credit card required", "Cancel anytime", "Bank-grade security"].map((item) => (
+            <div key={item} className="flex items-center gap-2 text-blue-100 text-sm">
+              <Check size={14} className="text-white" />
+              {item}
+            </div>
+          ))}
         </div>
       </div>
     </section>
@@ -376,7 +460,6 @@ function Footer() {
               ))}
             </div>
           </div>
-
           <div>
             <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Product</div>
             <ul className="space-y-2.5">
@@ -390,7 +473,6 @@ function Footer() {
               ))}
             </ul>
           </div>
-
           <div>
             <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Legal</div>
             <ul className="space-y-2.5">
@@ -402,7 +484,6 @@ function Footer() {
             </ul>
           </div>
         </div>
-
         <div className="border-t border-gray-800 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
           <p className="text-xs text-gray-600">© {new Date().getFullYear()} FinOS. All rights reserved. Made with ♥ in India.</p>
           <div className="flex items-center gap-2 text-xs text-gray-600">
