@@ -37,7 +37,6 @@ export default function ProfilePage() {
   );
   const [avatarPreview, setAvatarPreview] = useState(avatar);
 
-  // Name
   const [name, setName] = useState(user?.name || "");
   const [nameStatus, setNameStatus] = useState({ type: "", msg: "" });
   const [savingName, setSavingName] = useState(false);
