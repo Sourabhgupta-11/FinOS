@@ -20,6 +20,7 @@ const taxRoutes = require("./routes/tax");
 const bankRoutes = require("./routes/bank");
 const notifRoutes = require("./routes/notifications");
 const networthRoutes = require("./routes/networth");
+const setuRoutes = require("./routes/setu");
 
 const { errorHandler } = require("./middleware/errorHandler");
 const { authenticate } = require("./middleware/auth");
@@ -77,6 +78,7 @@ app.use("/api/auth", googleAuthRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/email", emailRoutes);
 app.use("/api/subscription", subscriptionRoutes);
+app.use("/api/setu", setuRoutes);
 
 // ── All authenticated users ───────────────────────────────────────────────────
 app.use("/api/auth", authenticate, authExtendedRoutes);
