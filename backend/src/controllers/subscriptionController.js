@@ -4,7 +4,11 @@ const emailService = require("../services/email");
 const logger = require("../utils/logger");
 
 // Re-export payment handlers from api/razorpay
-const { createOrder, verifyPayment, cancelSubscription } = require("../api/razorpay");
+const {
+  createOrder,
+  verifyPayment,
+  cancelSubscription,
+} = require("../api/razorpay");
 
 // ── GET /api/subscription ─────────────────────────────────────────────────
 async function getSubscription(req, res, next) {
@@ -22,7 +26,8 @@ async function getSubscription(req, res, next) {
     );
     return res.json(rows[0] || { plan: "free", status: "active" });
   } catch (err) {
-    if (err.code === "42P01") return res.json({ plan: "free", status: "active" });
+    if (err.code === "42P01")
+      return res.json({ plan: "free", status: "active" });
     next(err);
   }
 }
@@ -35,7 +40,10 @@ async function handleWebhook(req, res, next) {
       ? req.body.toString()
       : JSON.stringify(req.body);
 
-    if (signature && !razorpayService.verifyWebhookSignature(rawBody, signature)) {
+    if (
+      signature &&
+      !razorpayService.verifyWebhookSignature(rawBody, signature)
+    ) {
       logger.warn("Invalid webhook signature");
       return res.status(401).json({ error: "Invalid signature" });
     }
@@ -65,20 +73,39 @@ async function handleWebhook(req, res, next) {
     ).catch(() => {});
 
     switch (event) {
-      case "subscription.created":   await _onSubscriptionCreated(payload);   break;
-      case "subscription.activated": await _onSubscriptionActivated(payload); break;
-      case "subscription.updated":   await _onSubscriptionUpdated(payload);   break;
-      case "subscription.paused":    await _onSubscriptionPaused(payload);    break;
-      case "subscription.resumed":   await _onSubscriptionResumed(payload);   break;
-      case "subscription.cancelled": await _onSubscriptionCancelled(payload); break;
-      case "subscription.ended":     await _onSubscriptionEnded(payload);     break;
-      case "subscription.pending":   await _onSubscriptionPending(payload);   break;
+      case "subscription.created":
+        await _onSubscriptionCreated(payload);
+        break;
+      case "subscription.activated":
+        await _onSubscriptionActivated(payload);
+        break;
+      case "subscription.updated":
+        await _onSubscriptionUpdated(payload);
+        break;
+      case "subscription.paused":
+        await _onSubscriptionPaused(payload);
+        break;
+      case "subscription.resumed":
+        await _onSubscriptionResumed(payload);
+        break;
+      case "subscription.cancelled":
+        await _onSubscriptionCancelled(payload);
+        break;
+      case "subscription.ended":
+        await _onSubscriptionEnded(payload);
+        break;
+      case "subscription.pending":
+        await _onSubscriptionPending(payload);
+        break;
       case "payment.authorized":
-        logger.info(`Payment authorized: ${payload?.payment?.entity?.id}`); break;
+        logger.info(`Payment authorized: ${payload?.payment?.entity?.id}`);
+        break;
       case "payment.captured":
-        logger.info(`Payment captured: ${payload?.payment?.entity?.id}`);   break;
+        logger.info(`Payment captured: ${payload?.payment?.entity?.id}`);
+        break;
       case "payment.failed":
-        logger.warn(`Payment failed: ${payload?.payment?.entity?.id}`);     break;
+        logger.warn(`Payment failed: ${payload?.payment?.entity?.id}`);
+        break;
       default:
         logger.info(`Unhandled webhook event: ${event}`);
     }
@@ -113,11 +140,20 @@ async function _onSubscriptionCreated(payload) {
          current_period_start=to_timestamp($5), current_period_end=to_timestamp($6),
          cancel_at_period_end=false, updated_at=NOW()
        WHERE user_id=$7`,
-      [sub.id, sub.customer_id, planType, sub.status,
-       Math.floor(sub.created_at), Math.floor(sub.expire_by), rows[0].user_id],
+      [
+        sub.id,
+        sub.customer_id,
+        planType,
+        sub.status,
+        Math.floor(sub.created_at),
+        Math.floor(sub.expire_by),
+        rows[0].user_id,
+      ],
     );
     logger.info(`Webhook: subscription created ${sub.id} -> ${planType}`);
-  } catch (err) { logger.error("_onSubscriptionCreated:", err); }
+  } catch (err) {
+    logger.error("_onSubscriptionCreated:", err);
+  }
 }
 
 async function _onSubscriptionActivated(payload) {
@@ -137,12 +173,24 @@ async function _onSubscriptionActivated(payload) {
        WHERE razorpay_subscription_id=$4`,
       [planType, Math.floor(sub.created_at), Math.floor(sub.expire_by), sub.id],
     );
-    const { rows: userRows } = await query("SELECT * FROM users WHERE id=$1", [rows[0].user_id]);
+    const { rows: userRows } = await query("SELECT * FROM users WHERE id=$1", [
+      rows[0].user_id,
+    ]);
     if (userRows[0]) {
-      emailService.sendSubscriptionConfirmEmail(userRows[0], planType).catch(() => {});
+      if (planType === "pro") {
+        emailService
+          .sendProSubscriptionConfirmEmail(userRows[0], planType)
+          .catch(() => {});
+      } else {
+        emailService
+          .sendSubscriptionConfirmEmail(userRows[0], planType)
+          .catch(() => {});
+      }
     }
     logger.info(`Webhook: subscription activated ${sub.id}`);
-  } catch (err) { logger.error("_onSubscriptionActivated:", err); }
+  } catch (err) {
+    logger.error("_onSubscriptionActivated:", err);
+  }
 }
 
 async function _onSubscriptionUpdated(payload) {
@@ -155,10 +203,18 @@ async function _onSubscriptionUpdated(payload) {
          current_period_start=to_timestamp($3), current_period_end=to_timestamp($4),
          updated_at=NOW()
        WHERE razorpay_subscription_id=$5`,
-      [planType, sub.status, Math.floor(sub.created_at), Math.floor(sub.expire_by), sub.id],
+      [
+        planType,
+        sub.status,
+        Math.floor(sub.created_at),
+        Math.floor(sub.expire_by),
+        sub.id,
+      ],
     );
     logger.info(`Webhook: subscription updated ${sub.id} -> ${sub.status}`);
-  } catch (err) { logger.error("_onSubscriptionUpdated:", err); }
+  } catch (err) {
+    logger.error("_onSubscriptionUpdated:", err);
+  }
 }
 
 async function _onSubscriptionPaused(payload) {
@@ -168,7 +224,9 @@ async function _onSubscriptionPaused(payload) {
       [payload.subscription.id],
     );
     logger.info(`Webhook: subscription paused ${payload.subscription.id}`);
-  } catch (err) { logger.error("_onSubscriptionPaused:", err); }
+  } catch (err) {
+    logger.error("_onSubscriptionPaused:", err);
+  }
 }
 
 async function _onSubscriptionResumed(payload) {
@@ -182,7 +240,9 @@ async function _onSubscriptionResumed(payload) {
       [planType, Math.floor(sub.expire_by), sub.id],
     );
     logger.info(`Webhook: subscription resumed ${sub.id}`);
-  } catch (err) { logger.error("_onSubscriptionResumed:", err); }
+  } catch (err) {
+    logger.error("_onSubscriptionResumed:", err);
+  }
 }
 
 async function _onSubscriptionCancelled(payload) {
@@ -194,7 +254,9 @@ async function _onSubscriptionCancelled(payload) {
       [payload.subscription.id],
     );
     logger.info(`Webhook: subscription cancelled ${payload.subscription.id}`);
-  } catch (err) { logger.error("_onSubscriptionCancelled:", err); }
+  } catch (err) {
+    logger.error("_onSubscriptionCancelled:", err);
+  }
 }
 
 async function _onSubscriptionEnded(payload) {
@@ -206,7 +268,9 @@ async function _onSubscriptionEnded(payload) {
       [payload.subscription.id],
     );
     logger.info(`Webhook: subscription ended ${payload.subscription.id}`);
-  } catch (err) { logger.error("_onSubscriptionEnded:", err); }
+  } catch (err) {
+    logger.error("_onSubscriptionEnded:", err);
+  }
 }
 
 async function _onSubscriptionPending(payload) {
@@ -218,13 +282,15 @@ async function _onSubscriptionPending(payload) {
       [planType, sub.id],
     );
     logger.info(`Webhook: subscription pending ${sub.id}`);
-  } catch (err) { logger.error("_onSubscriptionPending:", err); }
+  } catch (err) {
+    logger.error("_onSubscriptionPending:", err);
+  }
 }
 
 // ── Exports ───────────────────────────────────────────────────────────────
 module.exports = {
   getSubscription,
-  createSubscription: createOrder,   // alias — routes still call createSubscription
+  createSubscription: createOrder, // alias — routes still call createSubscription
   verifyPayment,
   cancelSubscription,
   handleWebhook,
