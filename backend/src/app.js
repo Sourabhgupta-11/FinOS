@@ -21,6 +21,7 @@ const bankRoutes = require("./routes/bank");
 const notifRoutes = require("./routes/notifications");
 const networthRoutes = require("./routes/networth");
 const setuRoutes = require("./routes/setu");
+const launchRoutes = require("./routes/launch");
 
 const { errorHandler } = require("./middleware/errorHandler");
 const { authenticate } = require("./middleware/auth");
@@ -79,6 +80,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/email", emailRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/setu", setuRoutes);
+app.use("/api/launch", launchRoutes);
 
 // ── All authenticated users ───────────────────────────────────────────────────
 app.use("/api/auth", authenticate, authExtendedRoutes);

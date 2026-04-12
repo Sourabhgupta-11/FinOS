@@ -242,14 +242,34 @@ async function sendLoginAlertEmail(user, { ip, time } = {}) {
   });
 }
 
+// ─── Waitlist confirmation ────────────────────────────────────────────────────
+async function sendWaitlistConfirmationEmail(email, name) {
+  await sendEmail({
+    to: email,
+    subject: "🎉 You're on the FinOS waitlist!",
+    html: baseTemplate(
+      "Welcome to the waitlist!",
+      `
+      <p>Hi ${name},</p>
+      <p>Thank you for joining the FinOS waitlist! 🚀</p>
+      <p>We're excited to bring you an AI-powered financial operating system designed for India. You'll be among the first to get access when we launch.</p>
+      <p>Keep an eye on your inbox — we'll notify you the moment FinOS goes live with exclusive early-access benefits for waitlist members.</p>
+      <p style="margin-top:24px;padding-top:24px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:13px">You're on the VIP list. We can't wait to help you take control of your finances!</p>
+    `,
+    ),
+  });
+}
+
 module.exports = {
   sendEmail,
   sendVerificationEmail,
   sendPasswordResetEmail,
   sendSubscriptionConfirmEmail,
+  sendProSubscriptionConfirmEmail,
   sendSIPReminderEmail,
   sendBudgetAlertEmail,
   sendWelcomeEmail,
   sendPasswordChangedEmail,
   sendLoginAlertEmail,
+  sendWaitlistConfirmationEmail,
 };

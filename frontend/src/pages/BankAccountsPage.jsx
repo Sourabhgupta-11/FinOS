@@ -192,7 +192,23 @@ export default function BankAccountsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      {/* Coming Soon Banner */}
+      <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/40 border-l-4 border-amber-500 rounded-lg p-4">
+        <div className="flex items-center gap-3">
+          <Clock size={20} className="text-amber-600 dark:text-amber-400" />
+          <div>
+            <h3 className="font-bold text-amber-900 dark:text-amber-300">
+              Coming Soon!
+            </h3>
+            <p className="text-sm text-amber-800 dark:text-amber-400 mt-0.5">
+              Bank Account Linking is launching in the next update. Stay tuned
+              for secure account connections via Setu!
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between opacity-50 pointer-events-none">
         <div>
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
             Bank Accounts
@@ -202,8 +218,8 @@ export default function BankAccountsPage() {
           </p>
         </div>
         <button
-          onClick={() => setShowAdd((p) => !p)}
-          className="btn-primary text-sm py-2 flex items-center gap-2"
+          disabled
+          className="btn-primary text-sm py-2 flex items-center gap-2 opacity-50 cursor-not-allowed"
         >
           <Plus size={14} /> Add account
         </button>

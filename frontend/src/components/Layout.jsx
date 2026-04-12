@@ -43,7 +43,13 @@ const NAV = [
   { to: "/simulator", icon: FlaskConical, label: "Simulator", min: "pro" },
   { to: "/history", icon: History, label: "History", min: "pro" },
   { to: "/expenses", icon: CreditCard, label: "Expenses", min: "pro" },
-  { to: "/bank", icon: Landmark, label: "Bank Accounts", min: "pro" },
+  {
+    to: "/bank",
+    icon: Landmark,
+    label: "Bank Accounts",
+    min: "pro",
+    launchingSoon: true,
+  },
   { section: "Premium" },
   {
     to: "/allocator-advanced",
@@ -154,22 +160,28 @@ export default function Layout() {
             );
 
           const locked = PLAN_ORDER[plan] < PLAN_ORDER[item.min];
+          const comingSoon = item.launchingSoon;
           const LockIcon = item.min === "premium" ? Crown : Zap;
 
           return (
             <NavLink
               key={item.to}
-              to={item.to}
+              to={comingSoon ? "#" : item.to}
               end={item.to === "/"}
-              onClick={() => setOpen(false)}
+              onClick={(e) => {
+                if (comingSoon) e.preventDefault();
+                setOpen(false);
+              }}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150
+                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 relative
                  ${
-                   isActive
-                     ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30"
-                     : locked
-                       ? "text-gray-300 dark:text-gray-600 cursor-default"
-                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
+                   comingSoon
+                     ? "text-gray-300 dark:text-gray-600 cursor-not-allowed"
+                     : isActive
+                       ? "bg-blue-600 text-white shadow-sm shadow-blue-500/30"
+                       : locked
+                         ? "text-gray-300 dark:text-gray-600 cursor-default"
+                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-gray-100"
                  }`
               }
             >
@@ -177,10 +189,17 @@ export default function Layout() {
                 <>
                   <item.icon
                     size={16}
-                    className={isActive ? "text-white" : ""}
+                    className={isActive && !comingSoon ? "text-white" : ""}
                   />
                   <span className="flex-1">{item.label}</span>
-                  {locked && <LockIcon size={11} className="opacity-40" />}
+                  {comingSoon && (
+                    <span className="text-[9px] font-bold bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 px-1.5 py-0.5 rounded-md">
+                      Coming Soon
+                    </span>
+                  )}
+                  {!comingSoon && locked && (
+                    <LockIcon size={11} className="opacity-40" />
+                  )}
                 </>
               )}
             </NavLink>
