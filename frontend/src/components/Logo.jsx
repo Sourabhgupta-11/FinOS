@@ -1,5 +1,4 @@
-// FinOS Logo mark — self-contained SVG component
-// size: number (default 32), variant: 'full' | 'icon'
+
 export default function Logo({ size = 32, className = '' }) {
   return (
     <svg
