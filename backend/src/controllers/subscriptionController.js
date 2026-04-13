@@ -3,7 +3,6 @@ const razorpayService = require("../services/razorpay");
 const emailService = require("../services/email");
 const logger = require("../utils/logger");
 
-// Re-export payment handlers from api/razorpay
 const {
   createOrder,
   verifyPayment,
