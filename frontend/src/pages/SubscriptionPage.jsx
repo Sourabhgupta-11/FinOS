@@ -119,25 +119,50 @@ export default function SubscriptionPage() {
 
     try {
       // Step 1: Create order on backend
-      const res = await api.post("/subscription", { planType: planKey });
+      const res = await api.post("/subscription", {
+        planType: planKey,
+      });
 
-      // Demo mode — no Razorpay keys configured
+      // No payment required (launch free users)
+      if (res.data.paymentRequired === false) {
+        setSuccess(
+          res.data.message ||
+            `${planKey.charAt(0).toUpperCase() + planKey.slice(1)} plan activated!`
+        );
+
+        setProcessing(null);
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+
+        return;
+      }
+
+      // Demo mode
       if (res.data.demo) {
         setSuccess(
-          `✓ ${planKey.charAt(0).toUpperCase() + planKey.slice(1)} plan activated (demo mode — configure Razorpay keys for live payments).`,
+          `✓ ${planKey.charAt(0).toUpperCase() + planKey.slice(1)} plan activated (demo mode).`
         );
+
         setProcessing(null);
-        setTimeout(() => window.location.reload(), 2000);
+
+        setTimeout(() => {
+          window.location.reload();
+        }, 1500);
+
         return;
       }
-
       // Step 2: Load Razorpay SDK
       const loaded = await loadRazorpayScript();
-      if (!loaded) {
-        setError("Failed to load payment gateway. Please check your connection and try again.");
-        setProcessing(null);
-        return;
-      }
+
+if (!loaded) {
+  setError(
+    "Failed to load payment gateway. Please check your connection and try again."
+  );
+  setProcessing(null);
+  return;
+}
 
       const plan = PLANS.find((p) => p.key === planKey);
 
