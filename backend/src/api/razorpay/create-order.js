@@ -242,14 +242,15 @@ async function createOrder(req, res, next) {
       const endDate = pricing.freeUntilDate;
 
       await query(
-        `UPDATE subscriptions SET
-           plan=$1, status='active',
-           current_period_start=$2, current_period_end=$3,
-           cancel_at_period_end=false, payment_provider='launch',
-           is_launch_free=true, free_until=$3, updated_at=NOW()
-         WHERE user_id=$4`,
-        [planType, startDate, endDate, req.user.id],
-      );
+  `UPDATE subscriptions SET
+     pending_plan=$1,
+     payment_provider='razorpay',
+     razorpay_order_id=$2,
+     launch_price=$3,
+     updated_at=NOW()
+   WHERE user_id=$4`,
+  [planType, order.id, pricing.launchPrice, req.user.id],
+);
 
       logger.info(
         `Launch free subscription activated: ${planType} for user ${req.user.id} (free until ${endDate})`,
@@ -289,13 +290,16 @@ async function createOrder(req, res, next) {
     );
 
     // Persist pending order so webhook / verify can find it
-    await query(
-      `UPDATE subscriptions SET
-         plan=$1, status='pending', payment_provider='razorpay',
-         razorpay_subscription_id=$2, launch_price=$3, updated_at=NOW()
-       WHERE user_id=$4`,
-      [planType, order.id, pricing.launchPrice, req.user.id],
-    );
+   await query(
+  `UPDATE subscriptions SET
+     pending_plan=$1,
+     payment_provider='razorpay',
+     razorpay_order_id=$2,
+     launch_price=$3,
+     updated_at=NOW()
+   WHERE user_id=$4`,
+  [planType, order.id, pricing.launchPrice, req.user.id],
+);
 
     logger.info(
       `Razorpay order created: ${order.id} | plan=${planType} | user=${req.user.id} | pricing=${pricing.isBelowDiscountedPrice ? "discounted" : "regular"}`,
