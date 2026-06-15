@@ -108,21 +108,35 @@ async function determinePricing(planType) {
     };
   }
 
-  const stats = await getSubscriptionStats();
-  const totalActive = stats.free + stats.pro + stats.premium;
+  // Count users who have already received the launch offer
+const launchUsersResult = await query(
+  `SELECT COUNT(*) AS count
+   FROM subscriptions
+   WHERE is_launch_free = true`,
+).catch(() => ({ rows: [{ count: 0 }] }));
 
-  // Check if eligible for FREE tier (first N users)
-  if (totalActive < config.freeTierLimit) {
-    return {
-      amount: 0, // FREE
-      isLaunchFree: true,
-      isBelowDiscountedPrice: false,
-      launchPrice: null,
-      freeUntilDate: new Date(
-        Date.now() + config.freeTierMonths * 30 * 24 * 60 * 60 * 1000,
-      ),
-    };
-  }
+const launchUsersCount = parseInt(
+  launchUsersResult.rows[0].count,
+  10,
+);
+
+// First N users get any plan free for 6 months
+if (launchUsersCount < config.freeTierLimit) {
+  const freeUntilDate = new Date();
+  freeUntilDate.setMonth(
+    freeUntilDate.getMonth() + config.freeTierMonths,
+  );
+
+  return {
+    amount: 0,
+    isLaunchFree: true,
+    isBelowDiscountedPrice: false,
+    launchPrice: null,
+    freeUntilDate,
+  };
+}
+
+const stats = await getSubscriptionStats();
 
   // Check if eligible for DISCOUNTED pricing
   if (planType === "pro" && stats.pro < config.proDiscountedLimit) {
