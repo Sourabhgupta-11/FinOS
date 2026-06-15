@@ -24,11 +24,11 @@ CREATE TABLE IF NOT EXISTS launch_config (
 
 -- Insert initial launch config
 INSERT INTO launch_config (config_key, config_value, description) VALUES
-  ('free_tier_limit', '10', 'Number of users who get free subscription for 6 months'),
-  ('pro_discounted_limit', '50', 'Number of Pro subscriptions at launch discount price'),
-  ('premium_discounted_limit', '50', 'Number of Premium subscriptions at launch discount price'),
+  ('free_tier_limit', '5', 'Number of users who get free subscription for 6 months'),
+  ('pro_discounted_limit', '5', 'Number of Pro subscriptions at launch discount price'),
+  ('premium_discounted_limit', '5', 'Number of Premium subscriptions at launch discount price'),
   ('launch_mode_enabled', 'true', 'Enable/disable launch pricing'),
-  ('free_tier_months', '6', 'How many months the free tier subscriptions are free')
+  ('free_tier_months', '3', 'How many months the free tier subscriptions are free')
 ON CONFLICT (config_key) DO NOTHING;
 
 -- Track subscription count for launch pricing
