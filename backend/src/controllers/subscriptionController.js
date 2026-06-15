@@ -275,12 +275,10 @@ async function _onSubscriptionEnded(payload) {
 async function _onSubscriptionPending(payload) {
   try {
     const sub = payload.subscription;
-    const planType = payload.notes?.plan_type || "premium";
-    await query(
-      "UPDATE subscriptions SET plan=$1, status='pending', updated_at=NOW() WHERE razorpay_subscription_id=$2",
-      [planType, sub.id],
+
+    logger.info(
+      `Webhook: subscription pending ${sub.id} (ignored)`,
     );
-    logger.info(`Webhook: subscription pending ${sub.id}`);
   } catch (err) {
     logger.error("_onSubscriptionPending:", err);
   }
