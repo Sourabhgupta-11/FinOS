@@ -27,9 +27,9 @@ async function getLaunchConfig() {
 
     const config = {
       launchModeEnabled: "false",
-      freeTierLimit: 10,
-      proDiscountedLimit: 50,
-      premiumDiscountedLimit: 50,
+      freeTierLimit: 5,
+      proDiscountedLimit: 5,
+      premiumDiscountedLimit: 5,
       freeTierMonths: 6,
     };
 
@@ -51,9 +51,9 @@ async function getLaunchConfig() {
     logger.error("Error fetching launch config:", err);
     return {
       launchModeEnabled: "false",
-      freeTierLimit: 10,
-      proDiscountedLimit: 50,
-      premiumDiscountedLimit: 50,
+      freeTierLimit: 5,
+      proDiscountedLimit: 5,
+      premiumDiscountedLimit: 5,
       freeTierMonths: 6,
     };
   }
