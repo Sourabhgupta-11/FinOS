@@ -406,10 +406,10 @@ function LaunchDiscountBanner() {
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     <span className="line-through text-gray-400">
-                      ₹99/month
+                      ₹199/month
                     </span>{" "}
                     <span className="font-bold text-blue-600 dark:text-blue-400">
-                      ₹49/month (50% off)
+                      ₹99/month (50% off)
                     </span>
                   </p>
                 </div>
@@ -424,10 +424,10 @@ function LaunchDiscountBanner() {
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400">
                     <span className="line-through text-gray-400">
-                      ₹199/month
+                      ₹399/month
                     </span>{" "}
                     <span className="font-bold text-amber-600 dark:text-amber-400">
-                      ₹99/month (50% off)
+                      ₹199/month (50% off)
                     </span>
                   </p>
                 </div>
@@ -733,8 +733,8 @@ const PLANS = [
   {
     key: "pro",
     name: "Pro",
-    price: "₹49",
-    originalPrice: "₹99",
+    price: "₹99",
+    originalPrice: "₹199",
     period: "/month",
     icon: Zap,
     badge: "50% OFF",
@@ -763,8 +763,8 @@ const PLANS = [
   {
     key: "premium",
     name: "Premium",
-    price: "₹99",
-    originalPrice: "₹199",
+    price: "₹199",
+    originalPrice: "₹399",
     period: "/month",
     icon: Crown,
     badge: "50% OFF",
