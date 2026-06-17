@@ -6,7 +6,8 @@ const { sendPushToUser } = require("../services/pushNotification");
 const logger = require("../utils/logger");
 
 function generateToken() {
-  return crypto.randomBytes(32).toString("hex");
+  let token=crypto.randomBytes(32).toString("hex");
+  return token;
 }
 
 // ─── Helper: in-app notification ─────────────────────────────────────────────
@@ -30,7 +31,7 @@ async function pushAndSave(userId, title, body, type) {
   }
 }
 
-async function sendVerification(req, res, next) {
+async function sendVerification(req, res, next) {  //it only genrate and store token in database used for verification, and after it send verification email(dont verify email but only send verification email) 
   try {
     const user = req.user;
     if (user.email_verified) return res.json({ message: "Email already verified" });
@@ -50,6 +51,7 @@ async function sendVerification(req, res, next) {
   } catch (err) { next(err); }
 }
 
+//after sendVerification when user click verification link -> the below function will be called to verify user email
 async function verifyEmail(req, res, next) {
   try {
     const { token } = req.body;

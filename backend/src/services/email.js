@@ -14,7 +14,16 @@ function getTransporter() {
         pass: process.env.SMTP_PASS,
       },
     });
+
+    transporter.verify((err) => {
+      if (err) {
+        logger.error("SMTP verify failed:", err);
+      } else {
+        logger.info("SMTP server is ready");
+      }
+    });
   }
+
   return transporter;
 }
 
