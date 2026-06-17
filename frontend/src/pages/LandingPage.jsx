@@ -50,7 +50,7 @@ function WaitlistModal({ isOpen, onClose }) {
       <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full p-8 border border-gray-200 dark:border-gray-800">
         <div className="flex items-center gap-3 mb-6">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white text-lg">
-            ���
+            📩
           </div>
           <h2 className="text-xl font-black text-gray-900 dark:text-white">
             Join the Waitlist
@@ -313,7 +313,7 @@ function Hero({ onWaitlistClick }) {
             onClick={onWaitlistClick}
             className="btn-secondary text-base px-8 py-3.5 rounded-2xl"
           >
-            Join Waitlist ���
+            Join Waitlist 📩
           </button>
         </div>
         <div className="flex flex-col sm:flex-row gap-8 justify-center items-center pt-8 border-t border-gray-100 dark:border-gray-800">
@@ -321,7 +321,7 @@ function Hero({ onWaitlistClick }) {
             ["₹0", "Always free to start"],
             ["10+", "Powerful finance tools"],
             ["AI", "Smart advisor included"],
-            ["���", "Bank-grade security"],
+            ["🔐", "Bank-grade security"],
           ].map(([val, label]) => (
             <div key={label} className="text-center">
               <div className="text-2xl font-black text-gray-900 dark:text-white">
@@ -373,7 +373,7 @@ function LaunchDiscountBanner() {
               SPECIAL LAUNCH OFFER
             </div>
             <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white mb-4">
-              ��� Early Bird Pricing
+              🔥 Early Bird Pricing
             </h2>
             <p className="text-lg text-gray-700 dark:text-gray-300 mb-6 leading-relaxed">
               Be among the first users and get exclusive launch discounts for 6
@@ -517,50 +517,50 @@ function LaunchDiscountBanner() {
 // ─── Features ─────────────────────────────────────────────────────────────────
 const FEATURES = [
   {
-    icon: "���",
+    icon: "🤖",
     title: "AI Financial Advisor",
     desc: "Get personalized, context-aware advice tailored to your income, goals, and risk tolerance. Powered by advanced LLMs.",
     tag: "Free",
   },
   {
-    icon: "���",
+    icon: "📊",
     title: "Investment Allocator",
     desc: "Auto-allocate your monthly savings across equity, debt, gold, and FDs based on your risk profile — basic or advanced.",
     tag: "Free",
   },
   {
-    icon: "���",
+    icon: "📈",
     title: "Portfolio Tracker",
     desc: "Track mutual funds, stocks, and assets in real time. See your net worth grow on a unified dashboard.",
     tag: "Premium",
   },
   {
-    icon: "���",
+    icon: "🏦",
     title: "Bank Account Linking",
     desc: "Connect your bank accounts securely via Setu to auto-import transactions and get a complete picture of your finances.",
     tag: "Pro",
     launchingSoon: true,
   },
   {
-    icon: "���",
+    icon: "🧮",
     title: "Decision Simulator",
     desc: "Model financial decisions before making them. What-if scenarios for loans, investments, and life changes.",
     tag: "Pro",
   },
   {
-    icon: "���",
+    icon: "📑",
     title: "Tax Calculator",
     desc: "Optimise your taxes under the new and old regimes. Get deductions, rebates, and insights specific to your income.",
     tag: "Premium",
   },
   {
-    icon: "���",
+    icon: "💳",
     title: "Expense Tracker",
     desc: "Categorise and analyse your spending. Set budgets, get alerts when you're overspending, and find savings.",
     tag: "Pro",
   },
   {
-    icon: "���",
+    icon: "🎯",
     title: "Budget Manager",
     desc: "Create category-level budgets and get real-time alerts when you're approaching or exceeding limits.",
     tag: "Premium",
@@ -857,7 +857,7 @@ function Pricing() {
                     </div>
                     {plan.launchPrice && (
                       <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold mt-2">
-                        ��� Limited time offer
+                        ⏳ Limited Time Offer
                       </p>
                     )}
                   </div>
@@ -996,9 +996,13 @@ function CTA({ onWaitlistClick }) {
       />
 
       <div className="max-w-3xl mx-auto px-5 text-center relative z-10">
-        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center text-3xl backdrop-blur-sm">
-          ���
-        </div>
+        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-white/15 border border-white/25 flex items-center justify-center backdrop-blur-sm">
+  <img
+    src="/logo.svg"
+    alt="FinOS"
+    className="w-10 h-10"
+  />
+</div>
 
         <h2 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-5">
           Join FinOS Today
