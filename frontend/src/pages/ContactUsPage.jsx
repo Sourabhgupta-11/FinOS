@@ -80,10 +80,10 @@ export default function ContactUsPage() {
               </h3>
               <p className="text-gray-600 dark:text-gray-400 text-sm">
                 <a
-                  href="mailto:support@finos.app"
+                  href="mailto:finos.support@gmail.com"
                   className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
-                  support@finos.app
+                  finos.support@gmail.com
                 </a>
               </p>
             </div>

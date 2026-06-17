@@ -139,10 +139,10 @@ export default function PrivacyPolicyPage() {
                 If you have questions about this Privacy Policy or our privacy
                 practices, please contact us at{" "}
                 <a
-                  href="mailto:support@finos.app"
+                  href="mailto:finos.support@gmail.com"
                   className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                 >
-                  support@finos.app
+                  finos.support@gmail.com
                 </a>
                 .
               </p>

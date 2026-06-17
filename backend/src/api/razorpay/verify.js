@@ -45,7 +45,7 @@ async function verifyPayment(req, res, next) {
         `Invalid payment signature | order=${razorpay_order_id} | user=${req.user.id}`,
       );
       return res.status(400).json({
-        error: "Payment signature verification failed. Please contact support@finos.app.",
+        error: "Payment signature verification failed. Please contact finos.support@gmail.com.",
       });
     }
 

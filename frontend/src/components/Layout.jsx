@@ -437,10 +437,10 @@ export default function Layout() {
                       Contact Us
                     </a>
                     <a
-                      href="mailto:support@finos.app"
+                      href="mailto:finos.support@gmail.com"
                       className="block text-sm text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
-                      support@finos.app
+                     finos.support@gmail.com
                     </a>
                   </nav>
                 </div>

@@ -68,7 +68,7 @@ export default function RefundPolicyPage() {
                 <li>
                   Refunds are available within 7 days of the initial purchase
                 </li>
-                <li>Request refunds by contacting support@finos.app</li>
+                <li>Request refunds by contacting finos.support@gmail.com</li>
                 <li>Refunds will be processed within 5-10 business days</li>
                 <li>Refunds are issued to the original payment method</li>
               </ul>
@@ -115,7 +115,7 @@ export default function RefundPolicyPage() {
               </h2>
               <p className="mb-4">To request a refund:</p>
               <ol className="list-decimal list-inside space-y-2 ml-4">
-                <li>Contact our support team at support@finos.app</li>
+                <li>Contact our support team at finos.support@gmail.com</li>
                 <li>Include your account email and order details</li>
                 <li>Specify the reason for your refund request</li>
                 <li>Our team will review and respond within 2 business days</li>
@@ -151,10 +151,10 @@ export default function RefundPolicyPage() {
               <p>
                 For refund-related inquiries or complaints, please contact us at{" "}
                 <a
-                  href="mailto:support@finos.app"
+                  href="mailto:finos.support@gmail.com"
                   className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                 >
-                  support@finos.app
+                  finos.support@gmail.com
                 </a>
                 .
               </p>

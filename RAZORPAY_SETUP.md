@@ -54,7 +54,7 @@ Legal Links:
 - Refund Policy
 - Contact Us
 
-Contact: support@finos.app
+Contact: finos.support@gmail.com
 © 2026 FinOS. All rights reserved. India
 ```
 
@@ -71,7 +71,7 @@ Links:
 - Refund Policy
 - Contact Us
 
-Contact: support@finos.app
+Contact: finos.support@gmail.com
 ```
 
 ---
@@ -105,7 +105,7 @@ No financial advisory or investment services are provided.
 
 **Business Description:** (Use the text provided above)
 
-**Contact Email:** support@finos.app
+**Contact Email:** finos.support@gmail.com
 
 **Category:** SaaS or Financial Services
 
