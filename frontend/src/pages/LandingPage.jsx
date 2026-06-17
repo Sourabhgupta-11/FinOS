@@ -184,12 +184,12 @@ function Navbar({ onWaitlistClick }) {
           )}
         </div>
         <div className="hidden md:flex items-center gap-3">
-          <button
+          {/*<button
             onClick={onWaitlistClick}
             className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             Join Waitlist
-          </button>
+          </button>*/}
           <Link
             to="/login"
             className="text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
@@ -231,7 +231,7 @@ function Navbar({ onWaitlistClick }) {
               {label}
             </a>
           ))}
-          <button
+          {/*<button
             onClick={() => {
               onWaitlistClick();
               setMenuOpen(false);
@@ -239,7 +239,7 @@ function Navbar({ onWaitlistClick }) {
             className="block w-full text-left text-sm text-blue-600 dark:text-blue-400 py-1 font-semibold"
           >
             Join Waitlist
-          </button>
+          </button>*/}
           <div className="flex gap-3 pt-3 border-t border-gray-100 dark:border-gray-800">
             <Link
               to="/login"
@@ -288,7 +288,7 @@ function Hero({ onWaitlistClick }) {
       <div className="max-w-5xl mx-auto px-5 text-center">
         <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-50 dark:bg-red-950/50 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs font-semibold mb-6 tracking-wide">
           <Flame size={14} className="animate-pulse" />
-          LAUNCHING SOON — SPECIAL EARLY ACCESS PRICING
+          SPECIAL EARLY ACCESS PRICING
         </div>
         <h1 className="text-5xl md:text-7xl font-black tracking-tight text-gray-900 dark:text-white mb-6 leading-[1.05]">
           Your money,{" "}
@@ -309,12 +309,12 @@ function Hero({ onWaitlistClick }) {
           >
             Start for free — no card needed
           </Link>
-          <button
+          {/*<button
             onClick={onWaitlistClick}
             className="btn-secondary text-base px-8 py-3.5 rounded-2xl"
           >
             Join Waitlist 📩
-          </button>
+          </button>*/}
         </div>
         <div className="flex flex-col sm:flex-row gap-8 justify-center items-center pt-8 border-t border-gray-100 dark:border-gray-800">
           {[
@@ -1021,12 +1021,12 @@ function CTA({ onWaitlistClick }) {
           >
             Create free account →
           </Link>
-          <button
+          {/*<button
             onClick={onWaitlistClick}
             className="border-2 border-white/60 text-white font-bold px-8 py-3.5 rounded-2xl hover:bg-white/10 active:scale-95 transition-all duration-150 text-base"
           >
             Join Waitlist
-          </button>
+          </button>*/}
         </div>
 
         <div className="flex flex-col sm:flex-row items-center justify-center gap-6 mt-12 pt-8 border-t border-white/20">
@@ -1064,7 +1064,7 @@ function Footer() {
               AI-powered financial operating system built for India. Manage,
               grow, and understand your money.
             </p>
-            <div className="flex items-center gap-4">
+            {/*<div className="flex items-center gap-4">
               {["Twitter", "LinkedIn", "YouTube"].map((s) => (
                 <span
                   key={s}
@@ -1073,7 +1073,7 @@ function Footer() {
                   {s}
                 </span>
               ))}
-            </div>
+            </div>*/}
           </div>
           <div>
             <div className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">
