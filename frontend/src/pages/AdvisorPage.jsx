@@ -65,7 +65,24 @@ export default function AdvisorPage() {
   const inputRef = useRef(null);
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages, loading]);
-  useEffect(() => { api.get('/advisor/history').then(r => setSessions(r.data.sessions || [])).catch(() => {}); }, []);
+  useEffect(() => {
+  api.get('/advisor/history')
+    .then((r) => {
+      setSessions(r.data.sessions || []);
+
+      if (r.data.usage) {
+        setUsage(r.data.usage);
+
+        if (
+          r.data.usage.limit !== -1 &&
+          r.data.usage.used >= r.data.usage.limit
+        ) {
+          setRateLimited(true);
+        }
+      }
+    })
+    .catch(() => {});
+}, []);
 
   const usedToday = usage?.used || 0;
   const showBar   = aiLimit !== -1;

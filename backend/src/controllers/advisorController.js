@@ -185,24 +185,46 @@ async function chat(req, res, next) {
 async function getChatHistory(req, res, next) {
   try {
     const { sessionId } = req.params;
+
     if (sessionId) {
       const msgs = await query(
-        `SELECT id, role, content, created_at FROM chat_messages
-         WHERE session_id=$1 AND user_id=$2 ORDER BY created_at ASC`,
+        `SELECT id, role, content, created_at
+         FROM chat_messages
+         WHERE session_id = $1 AND user_id = $2
+         ORDER BY created_at ASC`,
         [sessionId, req.user.id]
       );
+
       return res.json({ messages: msgs.rows });
     }
+
     const sessions = await query(
-      `SELECT cs.id, cs.title, cs.created_at, cs.updated_at, COUNT(cm.id)::int AS message_count
+      `SELECT cs.id, cs.title, cs.created_at, cs.updated_at,
+              COUNT(cm.id)::int AS message_count
        FROM chat_sessions cs
-       LEFT JOIN chat_messages cm ON cm.session_id=cs.id
-       WHERE cs.user_id=$1
-       GROUP BY cs.id ORDER BY cs.updated_at DESC LIMIT 20`,
+       LEFT JOIN chat_messages cm ON cm.session_id = cs.id
+       WHERE cs.user_id = $1
+       GROUP BY cs.id
+       ORDER BY cs.updated_at DESC
+       LIMIT 20`,
       [req.user.id]
     );
-    res.json({ sessions: sessions.rows });
-  } catch (err) { next(err); }
+
+    // 👇 Add this
+    const plan = await getUserPlan(req.user.id);
+    const rateCheck = await checkRateLimit(req.user.id, plan);
+
+    res.json({
+      sessions: sessions.rows,
+      usage: {
+        used: rateCheck.used,
+        limit: rateCheck.limit,
+        plan,
+      },
+    });
+  } catch (err) {
+    next(err);
+  }
 }
 
 module.exports = { chat, getChatHistory, createSession };
