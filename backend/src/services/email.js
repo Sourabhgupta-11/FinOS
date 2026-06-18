@@ -5,7 +5,7 @@ const logger = require("../utils/logger");
 const APP_URL = process.env.APP_URL || "http://localhost:5173";
 const FROM = "FinOS <finos.support@gmail.com>";
 
-function createTransporter() {
+async function createTransporter() {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
@@ -16,14 +16,20 @@ function createTransporter() {
     refresh_token: process.env.GMAIL_REFRESH_TOKEN,
   });
 
+  const accessToken = await oauth2Client.getAccessToken();
+
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    family: 4,
     auth: {
       type: "OAuth2",
       user: "finos.support@gmail.com",
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       refreshToken: process.env.GMAIL_REFRESH_TOKEN,
+      accessToken: accessToken.token,
     },
   });
 }
