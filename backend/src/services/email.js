@@ -7,20 +7,17 @@ const FROM = process.env.EMAIL_FROM || `FinOS <${GMAIL_USER}>`;
 
 // ─── Gmail REST API sender (no SMTP, no blocked ports) ───────────────────────
 function makeRawEmail({ to, subject, html }) {
-  const boundary = "finos_boundary_" + Date.now();
+  const encodedSubject = `=?UTF-8?B?${Buffer.from(subject).toString("base64")}?=`;
   const lines = [
     `From: ${FROM}`,
     `To: ${to}`,
-    `Subject: ${subject}`,
+    `Subject: ${encodedSubject}`,
     `MIME-Version: 1.0`,
-    `Content-Type: multipart/alternative; boundary="${boundary}"`,
-    ``,
-    `--${boundary}`,
     `Content-Type: text/html; charset=UTF-8`,
-    `Content-Transfer-Encoding: quoted-printable`,
+    `Content-Transfer-Encoding: base64`,
+    `X-Mailer: FinOS Mailer`,
     ``,
-    html,
-    `--${boundary}--`,
+    Buffer.from(html).toString("base64"),
   ];
   const raw = lines.join("\r\n");
   return Buffer.from(raw)
@@ -81,7 +78,6 @@ function baseTemplate(title, body) {
 </div></body></html>`;
 }
 
-// ─── Email functions ──────────────────────────────────────────────────────────
 async function sendVerificationEmail(user, token) {
   const url = `${APP_URL}/verify-email?token=${token}`;
   await sendEmail({
