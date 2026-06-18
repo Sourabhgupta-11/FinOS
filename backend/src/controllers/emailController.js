@@ -4,6 +4,11 @@ const { query, getClient } = require("../db/pool");
 const emailService = require("../services/email");
 const { sendPushToUser } = require("../services/pushNotification");
 const logger = require("../utils/logger");
+const jwt = require("jsonwebtoken");
+
+function generateJWT(userId) {
+  return jwt.sign({ userId }, process.env.JWT_SECRET, { expiresIn: "30d" });
+}
 
 function generateToken() {
   let token=crypto.randomBytes(32).toString("hex");
@@ -71,8 +76,13 @@ async function verifyEmail(req, res, next) {
     await pushAndSave(rows[0].uid, "Welcome to FinOS! 🎉", `Hi ${rows[0].name}, your account is now fully active.`, "account");
     await emailService.sendWelcomeEmail({ email: rows[0].email, name: rows[0].name }).catch(() => {});
 
+    const jwtToken = generateJWT(rows[0].uid);
     logger.info("Email verified + welcome notifications sent", { userId: rows[0].uid });
-    res.json({ message: "Email verified successfully" });
+    res.json({ 
+      message: "Email verified successfully",
+      token: jwtToken,
+      user: { id: rows[0].uid, email: rows[0].email, name: rows[0].name }
+    });
   } catch (err) { next(err); }
 }
 
