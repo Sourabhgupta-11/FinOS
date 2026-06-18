@@ -1,56 +1,67 @@
 const { google } = require("googleapis");
-const nodemailer = require("nodemailer");
 const logger = require("../utils/logger");
 
 const APP_URL = process.env.APP_URL || "http://localhost:5173";
-const FROM = "FinOS <finos.support@gmail.com>";
+const GMAIL_USER = "finos.support@gmail.com";
+const FROM = process.env.EMAIL_FROM || `FinOS <${GMAIL_USER}>`;
 
-async function createTransporter() {
+// ─── Gmail REST API sender (no SMTP, no blocked ports) ───────────────────────
+function makeRawEmail({ to, subject, html }) {
+  const boundary = "finos_boundary_" + Date.now();
+  const lines = [
+    `From: ${FROM}`,
+    `To: ${to}`,
+    `Subject: ${subject}`,
+    `MIME-Version: 1.0`,
+    `Content-Type: multipart/alternative; boundary="${boundary}"`,
+    ``,
+    `--${boundary}`,
+    `Content-Type: text/html; charset=UTF-8`,
+    `Content-Transfer-Encoding: quoted-printable`,
+    ``,
+    html,
+    `--${boundary}--`,
+  ];
+  const raw = lines.join("\r\n");
+  return Buffer.from(raw)
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
+}
+
+async function getGmailClient() {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET
   );
-
   oauth2Client.setCredentials({
     refresh_token: process.env.GMAIL_REFRESH_TOKEN,
   });
-
-  const accessToken = await oauth2Client.getAccessToken();
-
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      type: "OAuth2",
-      user: "finos.support@gmail.com",
-      clientId: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      refreshToken: process.env.GMAIL_REFRESH_TOKEN,
-      accessToken: accessToken.token,
-    },
-  });
+  return google.gmail({ version: "v1", auth: oauth2Client });
 }
 
-async function sendEmail({ to, subject, html, text }) {
+async function sendEmail({ to, subject, html }) {
   if (!process.env.GMAIL_REFRESH_TOKEN) {
     logger.warn(`Email skipped (no GMAIL_REFRESH_TOKEN): ${subject} → ${to}`);
     return;
   }
   try {
-    const transporter = await createTransporter();
-    await transporter.verify();
-    console.log("SMTP VERIFIED");
-    const info = await transporter.sendMail({ from: FROM, to, subject, html, text });
-    logger.info(`Email sent: ${subject} → ${to} (${info.messageId})`);
+    const gmail = await getGmailClient();
+    const raw = makeRawEmail({ to, subject, html });
+    const res = await gmail.users.messages.send({
+      userId: "me",
+      requestBody: { raw },
+    });
+    logger.info(`Email sent: ${subject} → ${to} (messageId: ${res.data.id})`);
   } catch (err) {
-    logger.error("Email send failed", {
-  message: err.message,
-  stack: err.stack,
-  code: err.code,
-});
+    const detail = err?.response?.data?.error || err.message || JSON.stringify(err);
+    logger.error("Email send failed", { message: detail, code: err.code, to, subject });
     throw err;
   }
 }
 
+// ─── Templates ────────────────────────────────────────────────────────────────
 function baseTemplate(title, body) {
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
@@ -70,6 +81,7 @@ function baseTemplate(title, body) {
 </div></body></html>`;
 }
 
+// ─── Email functions ──────────────────────────────────────────────────────────
 async function sendVerificationEmail(user, token) {
   const url = `${APP_URL}/verify-email?token=${token}`;
   await sendEmail({
