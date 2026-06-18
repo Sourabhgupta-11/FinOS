@@ -40,7 +40,7 @@ async function sendEmail({ to, subject, html, text }) {
     return;
   }
   try {
-    const transporter = createTransporter();
+    const transporter = await createTransporter();
     const info = await transporter.sendMail({ from: FROM, to, subject, html, text });
     logger.info(`Email sent: ${subject} → ${to} (${info.messageId})`);
   } catch (err) {
