@@ -113,7 +113,6 @@ async function registerPending(req, res, next) {
       if (eu.email_verified) {
         return res.status(409).json({ error: "This email is already registered and verified. Please sign in instead.", code: "EMAIL_ALREADY_REGISTERED" });
       }
-      // Account exists but not verified — allow re-send
       userId = eu.id;
     } else {
       const passwordHash = await bcrypt.hash(password, 12);
@@ -125,9 +124,8 @@ async function registerPending(req, res, next) {
       logger.info("Pending user created", { userId, email });
     }
 
-    // Generate verification token
     const verifyToken = crypto.randomBytes(32).toString("hex");
-    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24h
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     await query(
       `INSERT INTO email_verifications (user_id, token, expires_at)
@@ -136,8 +134,14 @@ async function registerPending(req, res, next) {
       [userId, verifyToken, expires]
     );
 
-    await emailService.sendVerificationEmail({ email, name }, verifyToken);
-    logger.info("Verification email sent", { userId, email });
+    // ── Non-fatal email send ──────────────────────────────────────────────────
+    try {
+      await emailService.sendVerificationEmail({ email, name }, verifyToken);
+      logger.info("Verification email sent", { userId, email });
+    } catch (emailErr) {
+      logger.error("Verification email failed (non-fatal):", emailErr.message);
+      // User + token are saved — they can use resend flow
+    }
 
     res.status(201).json({ message: "Confirmation email sent. Please check your inbox." });
   } catch (err) {

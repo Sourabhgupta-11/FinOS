@@ -1,51 +1,41 @@
+const { google } = require("googleapis");
 const nodemailer = require("nodemailer");
 const logger = require("../utils/logger");
 
-let transporter = null;
+const APP_URL = process.env.APP_URL || "http://localhost:5173";
+const FROM = "FinOS <finos.support@gmail.com>";
 
-function getTransporter() {
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST || "smtp.gmail.com",
-      port: parseInt(process.env.SMTP_PORT) || 465,
-      secure: true,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-      connectionTimeout: 10000,
-      greetingTimeout: 10000,
-      socketTimeout: 10000,
-    });
+function createTransporter() {
+  const oauth2Client = new google.auth.OAuth2(
+    process.env.GOOGLE_CLIENT_ID,
+    process.env.GOOGLE_CLIENT_SECRET,
+    "http://localhost"
+  );
 
-    transporter.verify((err) => {
-      if (err) {
-        logger.error("SMTP verify failed:", err);
-      } else {
-        logger.info("SMTP server is ready");
-      }
-    });
-  }
+  oauth2Client.setCredentials({
+    refresh_token: process.env.GMAIL_REFRESH_TOKEN,
+  });
 
-  return transporter;
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      type: "OAuth2",
+      user: "finos.support@gmail.com",
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      refreshToken: process.env.GMAIL_REFRESH_TOKEN,
+    },
+  });
 }
 
-const APP_URL = process.env.APP_URL || "http://localhost:5173";
-const FROM = process.env.EMAIL_FROM || "Financial OS <no-reply@financialos.in>";
-
 async function sendEmail({ to, subject, html, text }) {
-  if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
-    logger.warn(`Email skipped (no SMTP config): ${subject} → ${to}`);
+  if (!process.env.GMAIL_REFRESH_TOKEN) {
+    logger.warn(`Email skipped (no GMAIL_REFRESH_TOKEN): ${subject} → ${to}`);
     return;
   }
   try {
-    const info = await getTransporter().sendMail({
-      from: FROM,
-      to,
-      subject,
-      html,
-      text,
-    });
+    const transporter = createTransporter();
+    const info = await transporter.sendMail({ from: FROM, to, subject, html, text });
     logger.info(`Email sent: ${subject} → ${to} (${info.messageId})`);
   } catch (err) {
     logger.error("Email send failed:", err.message);
@@ -77,15 +67,12 @@ async function sendVerificationEmail(user, token) {
   await sendEmail({
     to: user.email,
     subject: "Verify your Financial OS account",
-    html: baseTemplate(
-      "Verify your email",
-      `
+    html: baseTemplate("Verify your email", `
       <p>Hi ${user.name},</p>
       <p>Welcome to Financial OS! Click the button below to verify your email and get started.</p>
       <a href="${url}" class="btn">Verify Email</a>
       <p>This link expires in 24 hours.</p>
-    `,
-    ),
+    `),
   });
 }
 
@@ -94,15 +81,12 @@ async function sendPasswordResetEmail(user, token) {
   await sendEmail({
     to: user.email,
     subject: "Reset your Financial OS password",
-    html: baseTemplate(
-      "Reset your password",
-      `
+    html: baseTemplate("Reset your password", `
       <p>Hi ${user.name},</p>
       <p>We received a request to reset your password. Click the button below:</p>
       <a href="${url}" class="btn">Reset Password</a>
       <p>This link expires in 1 hour. If you didn't request this, you can safely ignore this email.</p>
-    `,
-    ),
+    `),
   });
 }
 
@@ -110,9 +94,7 @@ async function sendSubscriptionConfirmEmail(user, plan) {
   await sendEmail({
     to: user.email,
     subject: "🎉 Welcome to Financial OS Premium!",
-    html: baseTemplate(
-      "Premium activated!",
-      `
+    html: baseTemplate("Premium activated!", `
       <p>Hi ${user.name},</p>
       <p>Your <strong>Premium subscription</strong> is now active at ₹199/month.</p>
       <p>You now have access to:</p>
@@ -125,8 +107,7 @@ async function sendSubscriptionConfirmEmail(user, plan) {
         <li>Budget Manager</li>
       </ul>
       <a href="${APP_URL}" class="btn">Open Financial OS</a>
-    `,
-    ),
+    `),
   });
 }
 
@@ -134,9 +115,7 @@ async function sendProSubscriptionConfirmEmail(user, plan) {
   await sendEmail({
     to: user.email,
     subject: "👑 Welcome to Financial OS Pro!",
-    html: baseTemplate(
-      "Pro subscription activated!",
-      `
+    html: baseTemplate("Pro subscription activated!", `
       <p>Hi ${user.name},</p>
       <p>Your <strong>Pro subscription</strong> is now active at ₹499/month.</p>
       <p>You now have access to all Pro features:</p>
@@ -152,8 +131,7 @@ async function sendProSubscriptionConfirmEmail(user, plan) {
         <li>📞 Priority Support</li>
       </ul>
       <a href="${APP_URL}" class="btn">Open Financial OS Pro</a>
-    `,
-    ),
+    `),
   });
 }
 
@@ -161,15 +139,12 @@ async function sendSIPReminderEmail(user, sipAmount) {
   await sendEmail({
     to: user.email,
     subject: `⏰ SIP Reminder — ₹${sipAmount.toLocaleString("en-IN")} due today`,
-    html: baseTemplate(
-      "Your SIP is due today",
-      `
+    html: baseTemplate("Your SIP is due today", `
       <p>Hi ${user.name},</p>
       <p>This is your monthly SIP reminder. Your scheduled investment of <strong>₹${sipAmount.toLocaleString("en-IN")}</strong> is due today.</p>
       <p>Consistent SIP investing is the most reliable path to long-term wealth. Don't skip today!</p>
       <a href="${APP_URL}/allocator" class="btn">View your allocation</a>
-    `,
-    ),
+    `),
   });
 }
 
@@ -177,36 +152,20 @@ async function sendBudgetAlertEmail(user, categoryName, spent, budget, pct) {
   await sendEmail({
     to: user.email,
     subject: `⚠️ Budget alert: ${categoryName} at ${pct}%`,
-    html: baseTemplate(
-      `Budget alert: ${categoryName}`,
-      `
+    html: baseTemplate(`Budget alert: ${categoryName}`, `
       <p>Hi ${user.name},</p>
       <p>You've spent <strong>₹${spent.toLocaleString("en-IN")}</strong> of your ₹${budget.toLocaleString("en-IN")} budget for <strong>${categoryName}</strong> this month.</p>
       <p>That's <strong>${pct}%</strong> of your budget.</p>
       <a href="${APP_URL}/expenses" class="btn">Review your expenses</a>
-    `,
-    ),
+    `),
   });
 }
 
-module.exports = {
-  sendEmail,
-  sendVerificationEmail,
-  sendPasswordResetEmail,
-  sendSubscriptionConfirmEmail,
-  sendProSubscriptionConfirmEmail,
-  sendSIPReminderEmail,
-  sendBudgetAlertEmail,
-};
-
-// ─── New account created notification ────────────────────────────────────────
 async function sendWelcomeEmail(user) {
   await sendEmail({
     to: user.email,
     subject: "🎉 Welcome to FinOS — your account is ready!",
-    html: baseTemplate(
-      "Your account is activated!",
-      `
+    html: baseTemplate("Your account is activated!", `
       <p>Hi ${user.name},</p>
       <p>Your FinOS account is now active. You can start managing your finances with AI-powered tools.</p>
       <ul style="color:#6b7280;line-height:2">
@@ -216,59 +175,46 @@ async function sendWelcomeEmail(user) {
         <li>📈 Investment Allocator</li>
       </ul>
       <a href="${APP_URL}" class="btn">Open FinOS Dashboard</a>
-    `,
-    ),
+    `),
   });
 }
 
-// ─── Password changed notification ───────────────────────────────────────────
 async function sendPasswordChangedEmail(user) {
   await sendEmail({
     to: user.email,
     subject: "🔐 Your FinOS password was changed",
-    html: baseTemplate(
-      "Password changed",
-      `
+    html: baseTemplate("Password changed", `
       <p>Hi ${user.name},</p>
       <p>Your FinOS account password was successfully changed.</p>
       <p>If you did not make this change, please <a href="${APP_URL}/forgot-password" style="color:#2563eb">reset your password immediately</a> and contact support.</p>
       <p style="color:#9ca3af;font-size:13px">This notification was sent for your security.</p>
-    `,
-    ),
+    `),
   });
 }
 
-// ─── Login from new device (optional future use) ──────────────────────────────
 async function sendLoginAlertEmail(user, { ip, time } = {}) {
   await sendEmail({
     to: user.email,
     subject: "🔔 New sign-in to your FinOS account",
-    html: baseTemplate(
-      "New sign-in detected",
-      `
+    html: baseTemplate("New sign-in detected", `
       <p>Hi ${user.name},</p>
       <p>A new sign-in to your account was detected${time ? ` at ${time}` : ""}${ip ? ` from IP ${ip}` : ""}.</p>
       <p>If this was you, no action is needed. If not, please <a href="${APP_URL}/forgot-password" style="color:#2563eb">reset your password</a> immediately.</p>
-    `,
-    ),
+    `),
   });
 }
 
-// ─── Waitlist confirmation ────────────────────────────────────────────────────
 async function sendWaitlistConfirmationEmail(email, name) {
   await sendEmail({
     to: email,
     subject: "🎉 You're on the FinOS waitlist!",
-    html: baseTemplate(
-      "Welcome to the waitlist!",
-      `
+    html: baseTemplate("Welcome to the waitlist!", `
       <p>Hi ${name},</p>
       <p>Thank you for joining the FinOS waitlist! 🚀</p>
       <p>We're excited to bring you an AI-powered financial operating system designed for India. You'll be among the first to get access when we launch.</p>
       <p>Keep an eye on your inbox — we'll notify you the moment FinOS goes live with exclusive early-access benefits for waitlist members.</p>
       <p style="margin-top:24px;padding-top:24px;border-top:1px solid #e5e7eb;color:#9ca3af;font-size:13px">You're on the VIP list. We can't wait to help you take control of your finances!</p>
-    `,
-    ),
+    `),
   });
 }
 
