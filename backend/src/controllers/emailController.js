@@ -95,9 +95,17 @@ async function forgotPassword(req, res, next) {
         [rows[0].id, token, expires]
       );
 
-      await emailService.sendPasswordResetEmail(rows[0], token).catch((err) => {
-        logger.error("Failed to send password reset email", { email, error: err.message });
-      });
+      try {
+  logger.info(`RESET EMAIL START ${email}`);
+  await emailService.sendPasswordResetEmail(rows[0], token);
+  logger.info(`RESET EMAIL SUCCESS ${email}`);
+} catch (err) {
+  logger.error("RESET EMAIL FAILED", {
+    email,
+    error: err.message,
+    stack: err.stack,
+  });
+}
       logger.info(`Password reset requested for ${email}`);
     } else {
       logger.info(`Password reset requested for non-existent email: ${email}`);

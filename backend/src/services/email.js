@@ -42,7 +42,11 @@ async function sendEmail({ to, subject, html, text }) {
     const info = await transporter.sendMail({ from: FROM, to, subject, html, text });
     logger.info(`Email sent: ${subject} → ${to} (${info.messageId})`);
   } catch (err) {
-    logger.error("Email send failed:", err.message);
+    logger.error("Email send failed", {
+  message: err.message,
+  stack: err.stack,
+  code: err.code,
+});
     throw err;
   }
 }
