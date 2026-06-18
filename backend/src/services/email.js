@@ -19,13 +19,17 @@ async function createTransporter() {
   const accessToken = await oauth2Client.getAccessToken();
 
   return nodemailer.createTransport({
-    service: "gmail",
+    host: "smtp.gmail.com",
+    port: 587,
+    secure: false,
+    family: 4,
     auth: {
       type: "OAuth2",
       user: "finos.support@gmail.com",
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       refreshToken: process.env.GMAIL_REFRESH_TOKEN,
+      accessToken: accessToken.token,
     },
   });
 }
