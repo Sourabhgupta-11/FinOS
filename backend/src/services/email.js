@@ -8,8 +8,7 @@ const FROM = "FinOS <finos.support@gmail.com>";
 async function createTransporter() {
   const oauth2Client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    "http://localhost"
+    process.env.GOOGLE_CLIENT_SECRET
   );
 
   oauth2Client.setCredentials({
@@ -19,10 +18,7 @@ async function createTransporter() {
   const accessToken = await oauth2Client.getAccessToken();
 
   return nodemailer.createTransport({
-    host: "smtp.gmail.com",
-    port: 587,
-    secure: false,
-    family: 4,
+    service: "gmail",
     auth: {
       type: "OAuth2",
       user: "finos.support@gmail.com",
@@ -41,6 +37,8 @@ async function sendEmail({ to, subject, html, text }) {
   }
   try {
     const transporter = await createTransporter();
+    await transporter.verify();
+    console.log("SMTP VERIFIED");
     const info = await transporter.sendMail({ from: FROM, to, subject, html, text });
     logger.info(`Email sent: ${subject} → ${to} (${info.messageId})`);
   } catch (err) {
