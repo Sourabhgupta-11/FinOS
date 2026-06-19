@@ -237,7 +237,7 @@ async function createOrder(req, res, next) {
 
     // ── LIVE MODE ──────────────────────────────────────────────────────
     // If plan is FREE (launch special), activate directly without payment
-   if (pricing.isLaunchFree) {
+if (pricing.isLaunchFree) {
   const startDate = new Date();
   const endDate = pricing.freeUntilDate;
 
