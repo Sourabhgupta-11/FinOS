@@ -237,34 +237,39 @@ async function createOrder(req, res, next) {
 
     // ── LIVE MODE ──────────────────────────────────────────────────────
     // If plan is FREE (launch special), activate directly without payment
-    if (pricing.isLaunchFree) {
-      const startDate = new Date();
-      const endDate = pricing.freeUntilDate;
+   if (pricing.isLaunchFree) {
+  const startDate = new Date();
+  const endDate = pricing.freeUntilDate;
 
-      await query(
-  `UPDATE subscriptions SET
-     pending_plan=$1,
-     payment_provider='razorpay',
-     razorpay_order_id=$2,
-     launch_price=$3,
-     updated_at=NOW()
-   WHERE user_id=$4`,
-  [planType, order.id, pricing.launchPrice, req.user.id],
-);
+  await query(
+    `UPDATE subscriptions SET
+       plan=$1,
+       status='active',
+       current_period_start=$2,
+       current_period_end=$3,
+       is_launch_free=true,
+       free_until=$4,
+       launch_price=$5,
+       updated_at=NOW()
+     WHERE user_id=$6`,
+    [
+      planType,
+      startDate,
+      endDate,
+      endDate,
+      pricing.launchPrice,
+      req.user.id,
+    ]
+  );
 
-      logger.info(
-        `Launch free subscription activated: ${planType} for user ${req.user.id} (free until ${endDate})`,
-      );
-      return res.json({
-        success: true,
-        plan: planType,
-        message:
-          "🎉 Congratulations! You're one of the first 10 users. Your subscription is FREE for 6 months!",
-        pricing,
-        paymentRequired: false,
-        isLaunchFree: true,
-      });
-    }
+  return res.json({
+    success: true,
+    plan: planType,
+    paymentRequired: false,
+    isLaunchFree: true,
+    pricing,
+  });
+}
 
     // Fetch user details for prefilling checkout form
     const { rows: userRows } = await query(
