@@ -5,169 +5,32 @@ const logger = require("../../utils/logger");
 // Plan amounts in paise (1 INR = 100 paise)
 // Base prices
 const PLAN_AMOUNTS = {
-  pro: 9900, // ₹99 (normal price)
-  premium: 19900, // ₹199 (normal price)
+  pro: 19900, // ₹199 (normal price)
+  premium: 39900, // ₹399 (normal price)
 };
 
 // Launch pricing (50% off)
 const LAUNCH_PRICING = {
-  pro: 4900, // ₹49 (50% off)
-  premium: 9900, // ₹99 (50% off)
+  pro: 9900, // ₹99 (50% off)
+  premium: 19900, // ₹199 (50% off)
 };
 
-/**
- * Get launch pricing configuration
- */
-async function getLaunchConfig() {
-  try {
-    const result = await query(
-      `SELECT config_key, config_value FROM launch_config 
-       WHERE config_key IN ('free_tier_limit', 'pro_discounted_limit', 'premium_discounted_limit', 'launch_mode_enabled', 'free_tier_months')`,
-    ).catch(() => ({ rows: [] }));
 
-    const config = {
-      launchModeEnabled: "false",
-      freeTierLimit: 5,
-      proDiscountedLimit: 5,
-      premiumDiscountedLimit: 5,
-      freeTierMonths: 6,
-    };
-
-    result.rows.forEach((row) => {
-      if (row.config_key === "launch_mode_enabled")
-        config.launchModeEnabled = row.config_value;
-      if (row.config_key === "free_tier_limit")
-        config.freeTierLimit = parseInt(row.config_value, 10);
-      if (row.config_key === "pro_discounted_limit")
-        config.proDiscountedLimit = parseInt(row.config_value, 10);
-      if (row.config_key === "premium_discounted_limit")
-        config.premiumDiscountedLimit = parseInt(row.config_value, 10);
-      if (row.config_key === "free_tier_months")
-        config.freeTierMonths = parseInt(row.config_value, 10);
-    });
-
-    return config;
-  } catch (err) {
-    logger.error("Error fetching launch config:", err);
-    return {
-      launchModeEnabled: "false",
-      freeTierLimit: 5,
-      proDiscountedLimit: 5,
-      premiumDiscountedLimit: 5,
-      freeTierMonths: 6,
-    };
-  }
-}
-
-/**
- * Get subscription counts and determine pricing tier
- */
-async function getSubscriptionStats() {
-  try {
-    const result = await query(`
-      SELECT plan, COUNT(*) as count 
-      FROM subscriptions 
-      WHERE status = 'active'
-      GROUP BY plan
-    `).catch(() => ({ rows: [] }));
-
-    const counts = {
-      free: 0,
-      pro: 0,
-      premium: 0,
-      total: 0,
-    };
-
-    result.rows.forEach((row) => {
-      if (row.plan === "free") counts.free = parseInt(row.count, 10);
-      if (row.plan === "pro") counts.pro = parseInt(row.count, 10);
-      if (row.plan === "premium") counts.premium = parseInt(row.count, 10);
-    });
-
-    counts.total = counts.free + counts.pro + counts.premium;
-    return counts;
-  } catch (err) {
-    logger.error("Error fetching subscription stats:", err);
-    return { free: 0, pro: 0, premium: 0, total: 0 };
-  }
-}
 
 /**
  * Determine pricing and eligibility for a plan
  * Returns: { amount, isLaunchFree, isBelowDiscountedPrice, launchPrice }
  */
 async function determinePricing(planType) {
-  const config = await getLaunchConfig();
-
-  if (config.launchModeEnabled !== "true") {
-    return {
-      amount: PLAN_AMOUNTS[planType],
-      isLaunchFree: false,
-      isBelowDiscountedPrice: false,
-      launchPrice: null,
-    };
-  }
-
-  // Count users who have already received the launch offer
-const launchUsersResult = await query(
-  `SELECT COUNT(*) AS count
-   FROM subscriptions
-   WHERE is_launch_free = true`,
-).catch(() => ({ rows: [{ count: 0 }] }));
-
-const launchUsersCount = parseInt(
-  launchUsersResult.rows[0].count,
-  10,
-);
-
-// First N users get any plan free for 6 months
-if (launchUsersCount < config.freeTierLimit) {
-  const freeUntilDate = new Date();
-  freeUntilDate.setMonth(
-    freeUntilDate.getMonth() + config.freeTierMonths,
-  );
-
   return {
-    amount: 0,
-    isLaunchFree: true,
-    isBelowDiscountedPrice: false,
-    launchPrice: null,
-    freeUntilDate,
-  };
-}
-
-const stats = await getSubscriptionStats();
-
-  // Check if eligible for DISCOUNTED pricing
-  if (planType === "pro" && stats.pro < config.proDiscountedLimit) {
-    return {
-      amount: LAUNCH_PRICING.pro,
-      isLaunchFree: false,
-      isBelowDiscountedPrice: true,
-      launchPrice: LAUNCH_PRICING.pro,
-      discountInfo: { originalPrice: PLAN_AMOUNTS.pro, discountPercent: 50 },
-    };
-  }
-
-  if (planType === "premium" && stats.premium < config.premiumDiscountedLimit) {
-    return {
-      amount: LAUNCH_PRICING.premium,
-      isLaunchFree: false,
-      isBelowDiscountedPrice: true,
-      launchPrice: LAUNCH_PRICING.premium,
-      discountInfo: {
-        originalPrice: PLAN_AMOUNTS.premium,
-        discountPercent: 50,
-      },
-    };
-  }
-
-  // Regular pricing
-  return {
-    amount: PLAN_AMOUNTS[planType],
+    amount: LAUNCH_PRICING[planType], // Pro ₹99, Premium ₹199
     isLaunchFree: false,
-    isBelowDiscountedPrice: false,
-    launchPrice: null,
+    isBelowDiscountedPrice: true,
+    launchPrice: LAUNCH_PRICING[planType],
+    discountInfo: {
+      originalPrice: PLAN_AMOUNTS[planType],
+      discountPercent: 50,
+    },
   };
 }
 
@@ -237,39 +100,7 @@ async function createOrder(req, res, next) {
 
     // ── LIVE MODE ──────────────────────────────────────────────────────
     // If plan is FREE (launch special), activate directly without payment
-if (pricing.isLaunchFree) {
-  const startDate = new Date();
-  const endDate = pricing.freeUntilDate;
 
-  await query(
-    `UPDATE subscriptions SET
-       plan=$1,
-       status='active',
-       current_period_start=$2,
-       current_period_end=$3,
-       is_launch_free=true,
-       free_until=$4,
-       launch_price=$5,
-       updated_at=NOW()
-     WHERE user_id=$6`,
-    [
-      planType,
-      startDate,
-      endDate,
-      endDate,
-      pricing.launchPrice,
-      req.user.id,
-    ]
-  );
-
-  return res.json({
-    success: true,
-    plan: planType,
-    paymentRequired: false,
-    isLaunchFree: true,
-    pricing,
-  });
-}
 
     // Fetch user details for prefilling checkout form
     const { rows: userRows } = await query(
