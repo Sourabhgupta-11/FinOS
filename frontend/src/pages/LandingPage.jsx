@@ -1,7 +1,7 @@
 ﻿import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import Logo from "../components/Logo";
-import { Check, X, ArrowRight, Shield, Flame, ChevronDown, Zap, Crown } from "lucide-react";
+import { Check, X, ArrowRight, Shield, Flame, ChevronDown, Plus, Minus } from "lucide-react";
 
 /* ═══════════════════════════════
    SCROLL PROGRESS
@@ -24,123 +24,73 @@ function ScrollProgress() {
 }
 
 /* ═══════════════════════════════
-   ANIMATED CANVAS DIVIDER
-   Each section gets a living, breathing wave divider
+   LIVE WAVE DIVIDER (canvas) — flowing animated separator
 ═══════════════════════════════ */
-function WaveDivider({ fromColor, toColor, flip = false, variant = "wave" }) {
+function WaveDivider({ toColor, variant = "wave" }) {
   const canvasRef = useRef(null);
   const rafRef = useRef(null);
-
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     let t = 0;
+    let dpr = Math.max(window.devicePixelRatio || 1, 1);
 
     const resize = () => {
-      canvas.width = canvas.offsetWidth * window.devicePixelRatio;
-      canvas.height = canvas.offsetHeight * window.devicePixelRatio;
-      ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+      dpr = Math.max(window.devicePixelRatio || 1, 1);
+      const w = canvas.offsetWidth;
+      const h = canvas.offsetHeight;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
     };
     resize();
     window.addEventListener("resize", resize);
 
+    const yAt = (x, W, H) => {
+      if (variant === "wave") return H*0.45 + Math.sin((x/W)*Math.PI*2.2+t)*H*0.18 + Math.sin((x/W)*Math.PI*3.8+t*1.3)*H*0.09 + Math.sin((x/W)*Math.PI*1.1+t*0.7)*H*0.06;
+      if (variant === "ripple") return H*0.5 + Math.sin((x/W)*Math.PI*4+t*1.5)*H*0.14 + Math.cos((x/W)*Math.PI*2+t*0.9)*H*0.10;
+      return H*0.4 + Math.sin((x/W)*Math.PI*1.5+t*0.8)*H*0.22 + Math.sin((x/W)*Math.PI*3+t*1.2)*H*0.08;
+    };
+
     const draw = () => {
-      const W = canvas.offsetWidth;
-      const H = canvas.offsetHeight;
+      const W = canvas.offsetWidth, H = canvas.offsetHeight;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, W, H);
 
-      // Background fill (fromColor)
-      ctx.fillStyle = fromColor;
-      ctx.fillRect(0, 0, W, H);
-
-      // Animated wave path
+      // Fill area under the wave with toColor (next section's bg)
       ctx.beginPath();
-      if (variant === "wave") {
-        ctx.moveTo(0, H);
-        for (let x = 0; x <= W; x += 2) {
-          const y = H * 0.45
-            + Math.sin((x / W) * Math.PI * 2.2 + t) * H * 0.18
-            + Math.sin((x / W) * Math.PI * 3.8 + t * 1.3) * H * 0.09
-            + Math.sin((x / W) * Math.PI * 1.1 + t * 0.7) * H * 0.06;
-          ctx.lineTo(x, y);
-        }
-        ctx.lineTo(W, H);
-        ctx.lineTo(0, H);
-      } else if (variant === "ripple") {
-        ctx.moveTo(0, H);
-        for (let x = 0; x <= W; x += 2) {
-          const y = H * 0.5
-            + Math.sin((x / W) * Math.PI * 4 + t * 1.5) * H * 0.14
-            + Math.cos((x / W) * Math.PI * 2 + t * 0.9) * H * 0.10;
-          ctx.lineTo(x, y);
-        }
-        ctx.lineTo(W, H);
-        ctx.lineTo(0, H);
-      } else {
-        // "peak" variant
-        ctx.moveTo(0, H);
-        for (let x = 0; x <= W; x += 2) {
-          const y = H * 0.4
-            + Math.sin((x / W) * Math.PI * 1.5 + t * 0.8) * H * 0.22
-            + Math.sin((x / W) * Math.PI * 3 + t * 1.2) * H * 0.08;
-          ctx.lineTo(x, y);
-        }
-        ctx.lineTo(W, H);
-        ctx.lineTo(0, H);
-      }
+      ctx.moveTo(0, H);
+      for (let x = 0; x <= W; x += 3) ctx.lineTo(x, yAt(x, W, H));
+      ctx.lineTo(W, H);
       ctx.closePath();
       ctx.fillStyle = toColor;
       ctx.fill();
 
-      // Gold shimmer line along wave crest
+      // Gold shimmer line along the crest
       ctx.beginPath();
-      if (variant === "wave") {
-        for (let x = 0; x <= W; x += 2) {
-          const y = H * 0.45
-            + Math.sin((x / W) * Math.PI * 2.2 + t) * H * 0.18
-            + Math.sin((x / W) * Math.PI * 3.8 + t * 1.3) * H * 0.09
-            + Math.sin((x / W) * Math.PI * 1.1 + t * 0.7) * H * 0.06;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
-      } else if (variant === "ripple") {
-        for (let x = 0; x <= W; x += 2) {
-          const y = H * 0.5
-            + Math.sin((x / W) * Math.PI * 4 + t * 1.5) * H * 0.14
-            + Math.cos((x / W) * Math.PI * 2 + t * 0.9) * H * 0.10;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
-      } else {
-        for (let x = 0; x <= W; x += 2) {
-          const y = H * 0.4
-            + Math.sin((x / W) * Math.PI * 1.5 + t * 0.8) * H * 0.22
-            + Math.sin((x / W) * Math.PI * 3 + t * 1.2) * H * 0.08;
-          x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-        }
+      for (let x = 0; x <= W; x += 3) {
+        const y = yAt(x, W, H);
+        x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
       }
-      const grad = ctx.createLinearGradient(0, 0, W, 0);
-      grad.addColorStop(0, "rgba(245,166,35,0)");
-      grad.addColorStop(0.3, "rgba(245,166,35,0.45)");
-      grad.addColorStop(0.6, "rgba(255,213,128,0.6)");
-      grad.addColorStop(1, "rgba(245,166,35,0)");
-      ctx.strokeStyle = grad;
+      const g = ctx.createLinearGradient(0, 0, W, 0);
+      g.addColorStop(0, "rgba(245,166,35,0)");
+      g.addColorStop(0.3, "rgba(245,166,35,0.45)");
+      g.addColorStop(0.6, "rgba(255,213,128,0.6)");
+      g.addColorStop(1, "rgba(245,166,35,0)");
+      ctx.strokeStyle = g;
       ctx.lineWidth = 1.5;
       ctx.stroke();
 
       t += 0.008;
       rafRef.current = requestAnimationFrame(draw);
     };
-
     draw();
-    return () => {
-      cancelAnimationFrame(rafRef.current);
-      window.removeEventListener("resize", resize);
-    };
-  }, [fromColor, toColor, variant]);
+    return () => { cancelAnimationFrame(rafRef.current); window.removeEventListener("resize", resize); };
+  }, [toColor, variant]);
 
   return (
-    <div style={{ position:"relative", height:"80px", transform: flip ? "scaleY(-1)" : "none", marginTop:"-1px", marginBottom:"-1px" }}>
-      <canvas ref={canvasRef} style={{ position:"absolute",inset:0,width:"100%",height:"100%",display:"block" }} />
+    <div className="wave-divider">
+      <canvas ref={canvasRef} className="wave-canvas" />
     </div>
   );
 }
@@ -155,40 +105,27 @@ function HeroParticles() {
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     let raf;
-    const resize = () => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-    };
+    const resize = () => { canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight; };
     resize();
     window.addEventListener("resize", resize);
-    const pts = Array.from({ length: 44 }, () => ({
-      x: Math.random() * canvas.width,
-      y: Math.random() * canvas.height,
-      vx: (Math.random() - 0.5) * 0.22,
-      vy: (Math.random() - 0.5) * 0.22,
-      r: Math.random() * 1.8 + 0.4,
-      a: Math.random() * 0.3 + 0.07,
+    const pts = Array.from({ length: 40 }, () => ({
+      x: Math.random()*canvas.width, y: Math.random()*canvas.height,
+      vx: (Math.random()-0.5)*0.22, vy: (Math.random()-0.5)*0.22,
+      r: Math.random()*1.8+0.4, a: Math.random()*0.3+0.07,
     }));
     const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0,0,canvas.width,canvas.height);
       pts.forEach(p => {
-        p.x += p.vx; p.y += p.vy;
-        if (p.x < 0) p.x = canvas.width;
-        if (p.x > canvas.width) p.x = 0;
-        if (p.y < 0) p.y = canvas.height;
-        if (p.y > canvas.height) p.y = 0;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(245,166,35,${p.a})`;
-        ctx.fill();
+        p.x+=p.vx; p.y+=p.vy;
+        if(p.x<0)p.x=canvas.width; if(p.x>canvas.width)p.x=0;
+        if(p.y<0)p.y=canvas.height; if(p.y>canvas.height)p.y=0;
+        ctx.beginPath(); ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+        ctx.fillStyle=`rgba(245,166,35,${p.a})`; ctx.fill();
       });
-      pts.forEach((a, i) => pts.slice(i + 1).forEach(b => {
-        const d = Math.hypot(a.x - b.x, a.y - b.y);
-        if (d < 100) {
-          ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
-          ctx.strokeStyle = `rgba(245,166,35,${0.08 * (1 - d / 100)})`;
-          ctx.lineWidth = 0.5; ctx.stroke();
-        }
+      pts.forEach((a,i)=>pts.slice(i+1).forEach(b=>{
+        const d=Math.hypot(a.x-b.x,a.y-b.y);
+        if(d<100){ ctx.beginPath(); ctx.moveTo(a.x,a.y); ctx.lineTo(b.x,b.y);
+          ctx.strokeStyle=`rgba(245,166,35,${0.08*(1-d/100)})`; ctx.lineWidth=0.5; ctx.stroke(); }
       }));
       raf = requestAnimationFrame(draw);
     };
@@ -202,58 +139,41 @@ function HeroParticles() {
    TYPEWRITER
 ═══════════════════════════════ */
 function Typewriter({ words }) {
-  const [idx, setIdx] = useState(0);
-  const [txt, setTxt] = useState("");
-  const [del, setDel] = useState(false);
+  const [idx,setIdx]=useState(0); const [txt,setTxt]=useState(""); const [del,setDel]=useState(false);
   useEffect(() => {
     const w = words[idx % words.length];
     const id = setTimeout(() => {
-      if (!del) {
-        setTxt(w.slice(0, txt.length + 1));
-        if (txt.length + 1 === w.length) setTimeout(() => setDel(true), 1900);
-      } else {
-        setTxt(w.slice(0, txt.length - 1));
-        if (txt.length === 0) { setDel(false); setIdx(i => i + 1); }
-      }
-    }, del ? 36 : 82);
+      if (!del) { setTxt(w.slice(0,txt.length+1)); if(txt.length+1===w.length) setTimeout(()=>setDel(true),1900); }
+      else { setTxt(w.slice(0,txt.length-1)); if(txt.length===0){setDel(false); setIdx(i=>i+1);} }
+    }, del?36:82);
     return () => clearTimeout(id);
-  }, [txt, del, idx, words]);
-  return <span className="tw">{txt}<span className="tw-c" /></span>;
+  }, [txt,del,idx,words]);
+  return <span className="tw">{txt}<span className="tw-c"/></span>;
 }
 
 /* ═══════════════════════════════
    REVEAL
 ═══════════════════════════════ */
-function Reveal({ children, delay = 0, className = "" }) {
-  const ref = useRef(null);
-  const [v, setV] = useState(false);
+function Reveal({ children, delay=0, className="" }) {
+  const ref=useRef(null); const [v,setV]=useState(false);
   useEffect(() => {
-    const obs = new IntersectionObserver(([e]) => { if (e.isIntersecting) { setV(true); obs.disconnect(); } }, { threshold: 0.07 });
-    if (ref.current) obs.observe(ref.current);
-    return () => obs.disconnect();
+    const obs=new IntersectionObserver(([e])=>{if(e.isIntersecting){setV(true);obs.disconnect();}},{threshold:0.07});
+    if(ref.current) obs.observe(ref.current);
+    return ()=>obs.disconnect();
   }, []);
-  return (
-    <div ref={ref} className={`rv ${v?"rv-in":""} ${className}`} style={{ transitionDelay:`${delay}ms` }}>
-      {children}
-    </div>
-  );
+  return <div ref={ref} className={`rv ${v?"rv-in":""} ${className}`} style={{transitionDelay:`${delay}ms`}}>{children}</div>;
 }
 
 /* ═══════════════════════════════
-   NET WORTH CARD (hero visual)
+   HERO CARD
 ═══════════════════════════════ */
 function HeroCard() {
-  const [score] = useState(72);
-  const circ = 2 * Math.PI * 20;
+  const circ = 2*Math.PI*20;
   return (
     <div className="hcard-wrap">
-      {/* Floating AI notification */}
       <div className="hcard-notif">
-        <span className="hcard-notif-dot" />
-        <span>FinBot: Your SIP of ₹5,000 is now active 🎉</span>
+        <span className="hcard-notif-dot"/><span>FinBot: Your SIP of ₹5,000 is now active 🎉</span>
       </div>
-
-      {/* Main card — mirrors real dashboard */}
       <div className="hcard">
         <div className="hcard-top">
           <div>
@@ -263,17 +183,14 @@ function HeroCard() {
           </div>
           <div className="hcard-score-wrap">
             <svg width="52" height="52" viewBox="0 0 52 52">
-              <circle cx="26" cy="26" r="20" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="3.5" />
+              <circle cx="26" cy="26" r="20" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="3.5"/>
               <circle cx="26" cy="26" r="20" fill="none" stroke="#F5A623" strokeWidth="3.5"
-                strokeDasharray={`${circ * 0.72} ${circ * 0.28}`}
-                strokeLinecap="round" transform="rotate(-90 26 26)"
-                style={{ transition:"stroke-dasharray 1.2s ease" }} />
-              <text x="26" y="30" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700" fontFamily="Sora,sans-serif">{score}</text>
+                strokeDasharray={`${circ*0.72} ${circ*0.28}`} strokeLinecap="round" transform="rotate(-90 26 26)"/>
+              <text x="26" y="30" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="700" fontFamily="Sora,sans-serif">72</text>
             </svg>
             <div className="hcard-score-lbl">Score</div>
           </div>
         </div>
-
         <div className="hcard-grid">
           {[["Liquid assets","₹0","dim"],["Investments","₹0","dim"],["Physical assets","₹50,00,000","gld"],["Total debt","₹25,00,000","red"]].map(([l,v,t])=>(
             <div key={l} className="hcard-cell">
@@ -282,24 +199,17 @@ function HeroCard() {
             </div>
           ))}
         </div>
-
-        {/* Sparkline */}
         <div className="hcard-spark">
           <svg viewBox="0 0 220 36" style={{width:"100%",height:"36px"}}>
-            <defs>
-              <linearGradient id="spg" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="0%" stopColor="#F5A623" stopOpacity="0.25"/>
-                <stop offset="100%" stopColor="#F5A623" stopOpacity="0"/>
-              </linearGradient>
-            </defs>
+            <defs><linearGradient id="spg" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#F5A623" stopOpacity="0.25"/><stop offset="100%" stopColor="#F5A623" stopOpacity="0"/>
+            </linearGradient></defs>
             <polygon points="0,32 25,28 55,30 85,18 115,22 150,10 185,6 220,2 220,36 0,36" fill="url(#spg)"/>
             <polyline points="0,32 25,28 55,30 85,18 115,22 150,10 185,6 220,2" fill="none" stroke="#F5A623" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
           <span className="hcard-spark-lbl">↑ +8.4% this month</span>
         </div>
       </div>
-
-      {/* Mini AI chat teaser below card */}
       <div className="hcard-chat">
         <div className="hcard-chat-q">How much should I invest in ELSS?</div>
         <div className="hcard-chat-a">🤖 At your bracket, ₹1.5L in ELSS saves ₹46,800 in taxes. I'd spread it across 2 funds.</div>
@@ -312,18 +222,14 @@ function HeroCard() {
    DASHBOARD MOCKUP
 ═══════════════════════════════ */
 function DashboardMockup() {
-  const [ci, setCi] = useState(0);
-  const [fading, setFading] = useState(false);
+  const [ci,setCi]=useState(0); const [fading,setFading]=useState(false);
   const CHATS = [
-    { q:"How do I start a SIP with ₹5,000/month?", a:"Open a demat on Zerodha or Kuvera. Start with UTI Nifty 50 Index Fund — low cost, market returns, zero guesswork." },
-    { q:"Where does my salary go each month?", a:"34% on food & transport. Trimming ₹3K/month adds ₹36,000/year to savings — want a revised budget?" },
-    { q:"Old or new tax regime — which saves more?", a:"With 80C + HRA at your bracket, old regime saves ₹18,200 more. Here's the full breakdown." },
+    {q:"How do I start a SIP with ₹5,000/month?",a:"Open a demat on Zerodha or Kuvera. Start with UTI Nifty 50 Index Fund — low cost, market returns, zero guesswork."},
+    {q:"Where does my salary go each month?",a:"34% on food & transport. Trimming ₹3K/month adds ₹36,000/year to savings — want a revised budget?"},
+    {q:"Old or new tax regime — which saves more?",a:"With 80C + HRA at your bracket, old regime saves ₹18,200 more. Here's the full breakdown."},
   ];
   useEffect(() => {
-    const t = setInterval(() => {
-      setFading(true);
-      setTimeout(() => { setCi(i => (i+1) % CHATS.length); setFading(false); }, 380);
-    }, 4000);
+    const t = setInterval(() => { setFading(true); setTimeout(()=>{setCi(i=>(i+1)%CHATS.length); setFading(false);},380); }, 4000);
     return () => clearInterval(t);
   }, []);
   return (
@@ -350,20 +256,11 @@ function DashboardMockup() {
           <div className="mock-disclaimer">⚠ FinBot provides educational information — not personalised financial advice.</div>
           <div className="mock-intro">
             <span className="mock-bot-ic">🤖</span>
-            <div className="mock-intro-msg">
-              <strong>Namaste! I'm FinBot, your AI financial advisor.</strong><br/>
-              Ask me about SIPs, mutual funds, tax saving (80C, 80D), salary planning — all for India.
-            </div>
+            <div className="mock-intro-msg"><strong>Namaste! I'm FinBot, your AI financial advisor.</strong><br/>Ask me about SIPs, mutual funds, tax saving (80C, 80D), salary planning — all for India.</div>
           </div>
           <div className={`mock-exchange ${fading?"mock-fade":""}`}>
-            <div className="mock-user-row">
-              <div className="mock-ubub">{CHATS[ci].q}</div>
-              <div className="mock-uav">S</div>
-            </div>
-            <div className="mock-ai-row">
-              <span className="mock-bic">🤖</span>
-              <div className="mock-abub">{CHATS[ci].a}</div>
-            </div>
+            <div className="mock-user-row"><div className="mock-ubub">{CHATS[ci].q}</div><div className="mock-uav">S</div></div>
+            <div className="mock-ai-row"><span className="mock-bic">🤖</span><div className="mock-abub">{CHATS[ci].a}</div></div>
           </div>
           <div className="mock-input-row">
             <input readOnly placeholder="Ask about SIP, taxes, mutual funds…" className="mock-input"/>
@@ -376,17 +273,16 @@ function DashboardMockup() {
 }
 
 /* ═══════════════════════════════
-   NAVBAR
+   NAVBAR — FIXED MOBILE LAYOUT
 ═══════════════════════════════ */
 function Navbar() {
-  const [sc, setSc] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [sc,setSc]=useState(false); const [open,setOpen]=useState(false);
   useEffect(() => {
-    const fn = () => setSc(window.scrollY > 24);
-    window.addEventListener("scroll", fn, { passive:true });
-    return () => window.removeEventListener("scroll", fn);
+    const fn=()=>setSc(window.scrollY>24);
+    window.addEventListener("scroll",fn,{passive:true});
+    return ()=>window.removeEventListener("scroll",fn);
   }, []);
-  const NAV = [["Features","#features"],["How it works","#how"],["Pricing","#pricing"],["Contact","/contact"]];
+  const NAV=[["Features","#features"],["How it works","#how"],["Pricing","#pricing"],["FAQ","#faq"],["Contact","/contact"]];
   return (
     <nav className={`nav ${sc?"nav-sc":""}`}>
       <div className="nav-in">
@@ -396,10 +292,8 @@ function Navbar() {
           <Link to="/login" className="nav-si">Sign in</Link>
           <Link to="/register" className="btn-gold btn-sm">Get started free</Link>
         </div>
-        <button className="hb" onClick={()=>setOpen(v=>!v)} aria-label="Menu">
-          <span className={open?"o":""}/>
-          <span className={open?"o m":""}/>
-          <span className={open?"o":""}/>
+        <button className="hb" onClick={()=>setOpen(v=>!v)} aria-label="Toggle menu" aria-expanded={open}>
+          <span className={open?"o":""}/><span className={open?"o m":""}/><span className={open?"o":""}/>
         </button>
       </div>
       {open&&(
@@ -416,28 +310,36 @@ function Navbar() {
 }
 
 /* ═══════════════════════════════
+   STICKY MOBILE CTA
+═══════════════════════════════ */
+function MobileStickyCTA() {
+  const [show,setShow]=useState(false);
+  useEffect(() => {
+    const fn=()=>setShow(window.scrollY>520);
+    window.addEventListener("scroll",fn,{passive:true});
+    return ()=>window.removeEventListener("scroll",fn);
+  }, []);
+  return (
+    <div className={`mcta ${show?"mcta-show":""}`}>
+      <div className="mcta-text"><strong>Start free</strong><span>No card needed</span></div>
+      <Link to="/register" className="btn-gold btn-sm mcta-btn">Get started <ArrowRight size={14}/></Link>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════
    HERO
 ═══════════════════════════════ */
 function Hero() {
   return (
     <section className="hero">
       <HeroParticles/>
-      <div className="hero-orb hero-o1"/>
-      <div className="hero-orb hero-o2"/>
-      <div className="hero-orb hero-o3"/>
+      <div className="hero-orb hero-o1"/><div className="hero-orb hero-o2"/><div className="hero-orb hero-o3"/>
       <div className="C hero-in">
         <div className="hero-text">
-          <div className="hero-badge">
-            <span className="badge-dot"/><Flame size={11} style={{color:"#F5A623"}}/>
-            Early access · Special pricing live
-          </div>
-          <h1 className="hero-h1">
-            Stop guessing.<br/>
-            Start&nbsp;<Typewriter words={["investing.","saving.","growing.","planning."]}/>
-          </h1>
-          <p className="hero-sub">
-            FinOS is an AI-powered finance OS built for India. It understands your salary, goals, and tax system — and tells you exactly what to do next.
-          </p>
+          <div className="hero-badge"><span className="badge-dot"/><Flame size={11} style={{color:"#F5A623"}}/>Early access · Special pricing live</div>
+          <h1 className="hero-h1">Stop guessing.<br/>Start&nbsp;<Typewriter words={["investing.","saving.","growing.","planning."]}/></h1>
+          <p className="hero-sub">FinOS is an AI-powered finance OS built for India. It understands your salary, goals, and tax system — and tells you exactly what to do next.</p>
           <div className="hero-acts">
             <Link to="/register" className="btn-gold btn-lg">Start free — no card needed <ArrowRight size={15}/></Link>
             <a href="#features" className="btn-ghost btn-lg">See what's inside <ChevronDown size={15}/></a>
@@ -448,20 +350,75 @@ function Hero() {
             ))}
           </div>
         </div>
-        <div className="hero-vis">
-          <HeroCard/>
-        </div>
+        <div className="hero-vis"><HeroCard/></div>
       </div>
       <div className="stats-bar C-full">
         {[["₹0","Free forever"],["10+","Finance tools"],["AI","Advisor built-in"],["India","Made for ₹"]].map(([v,l])=>(
           <div key={l} className="stat"><div className="stat-v">{v}</div><div className="stat-l">{l}</div></div>
         ))}
       </div>
-      <WaveDivider fromColor="#0B1120" toColor="#0F1829" variant="wave"/>
+      <WaveDivider toColor="#0F1829" variant="wave"/>
     </section>
   );
 }
 
+/* ═══════════════════════════════
+   PRODUCT PREVIEW
+═══════════════════════════════ */
+/* ═══════════════════════════════
+   QUICK CALCULATOR — new interactive widget
+   Lets a visitor see a real number before signing up
+═══════════════════════════════ */
+function QuickCalculator() {
+  const [salary, setSalary] = useState(60000);
+  const recommended = Math.round(salary * 0.2);
+  const yearly = recommended * 12;
+  const tenYear = Math.round(yearly * 10 * 1.8); // rough compounding illustration
+
+  return (
+    <section className="sec" style={{background:"#0F1829", paddingTop:"64px", paddingBottom:"64px"}}>
+      <div className="C">
+        <Reveal>
+          <div className="calc-card">
+            <div className="calc-left">
+              <div className="eyebrow">Try it now — no signup</div>
+              <h3 className="calc-h3">What should you be investing?</h3>
+              <p className="calc-p">Move the slider to your monthly take-home salary. This is the same logic FinOS uses on day one.</p>
+              <div className="calc-slider-wrap">
+                <div className="calc-slider-label">
+                  <span>Monthly salary</span>
+                  <span className="calc-slider-val">₹{salary.toLocaleString("en-IN")}</span>
+                </div>
+                <input
+                  type="range" min="15000" max="300000" step="5000" value={salary}
+                  onChange={(e) => setSalary(Number(e.target.value))}
+                  className="calc-slider"
+                />
+              </div>
+            </div>
+            <div className="calc-right">
+              <div className="calc-result-row">
+                <div className="calc-result-lbl">Recommended monthly investment</div>
+                <div className="calc-result-val">₹{recommended.toLocaleString("en-IN")}</div>
+              </div>
+              <div className="calc-result-row">
+                <div className="calc-result-lbl">That's per year</div>
+                <div className="calc-result-val calc-result-val--sm">₹{yearly.toLocaleString("en-IN")}</div>
+              </div>
+              <div className="calc-result-row calc-result-row--highlight">
+                <div className="calc-result-lbl">Potential value in 10 years*</div>
+                <div className="calc-result-val calc-result-val--gold">₹{tenYear.toLocaleString("en-IN")}</div>
+              </div>
+              <p className="calc-disclaimer">*Illustrative estimate assuming average equity returns. Not a guarantee — actual returns vary with market conditions.</p>
+              <Link to="/register" className="btn-gold btn-lg calc-cta">Get my full plan <ArrowRight size={15}/></Link>
+            </div>
+          </div>
+        </Reveal>
+      </div>
+      <WaveDivider toColor="#111B2E" variant="ripple"/>
+    </section>
+  );
+}
 /* ═══════════════════════════════
    PRODUCT PREVIEW
 ═══════════════════════════════ */
@@ -478,7 +435,7 @@ function ProductPreview() {
         </Reveal>
         <Reveal delay={70}><DashboardMockup/></Reveal>
       </div>
-      <WaveDivider fromColor="#0F1829" toColor="#111B2E" variant="ripple"/>
+      <WaveDivider toColor="#111B2E" variant="ripple"/>
     </section>
   );
 }
@@ -513,10 +470,7 @@ function Features() {
             <Reveal key={f.t} delay={i*38}>
               <div className={`feat ${f.soon?"feat-soon":""}`}>
                 {f.soon&&<span className="soon-badge">Coming soon</span>}
-                <div className="feat-top">
-                  <span className="feat-ic">{f.e}</span>
-                  <span className={`tag tag-${f.tc}`}>{f.tag}</span>
-                </div>
+                <div className="feat-top"><span className="feat-ic">{f.e}</span><span className={`tag tag-${f.tc}`}>{f.tag}</span></div>
                 <h3 className="feat-title">{f.t}</h3>
                 <p className="feat-desc">{f.d}</p>
               </div>
@@ -524,7 +478,7 @@ function Features() {
           ))}
         </div>
       </div>
-      <WaveDivider fromColor="#111B2E" toColor="#0B1120" variant="peak"/>
+      <WaveDivider toColor="#0B1120" variant="peak"/>
     </section>
   );
 }
@@ -543,12 +497,7 @@ function HowItWorks() {
   return (
     <section id="how" className="sec" style={{background:"#0B1120"}}>
       <div className="C">
-        <Reveal>
-          <div className="sec-hd">
-            <div className="eyebrow">Simple to start</div>
-            <h2 className="sec-h2">From sign-up to clarity<br/>in under 5 minutes.</h2>
-          </div>
-        </Reveal>
+        <Reveal><div className="sec-hd"><div className="eyebrow">Simple to start</div><h2 className="sec-h2">From sign-up to clarity<br/>in under 5 minutes.</h2></div></Reveal>
         <div className="how-grid">
           {STEPS.map((s,i)=>(
             <Reveal key={s.n} delay={i*85}>
@@ -562,7 +511,7 @@ function HowItWorks() {
           ))}
         </div>
       </div>
-      <WaveDivider fromColor="#0B1120" toColor="#111B2E" variant="wave"/>
+      <WaveDivider toColor="#111B2E" variant="wave"/>
     </section>
   );
 }
@@ -605,11 +554,7 @@ function Pricing() {
                 {p.rec&&<div className="rec-badge">Most popular</div>}
                 <div className="plan-hd">
                   <div className="plan-name">{p.name}</div>
-                  <div className="plan-pr-row">
-                    <span className="plan-pr">{p.price}</span>
-                    {p.orig&&<span className="plan-orig">{p.orig}</span>}
-                    <span className="plan-period">{p.period}</span>
-                  </div>
+                  <div className="plan-pr-row"><span className="plan-pr">{p.price}</span>{p.orig&&<span className="plan-orig">{p.orig}</span>}<span className="plan-period">{p.period}</span></div>
                   {p.badge&&<div className="plan-badge">{p.badge}</div>}
                   <p className="plan-tl">{p.tl}</p>
                 </div>
@@ -624,13 +569,13 @@ function Pricing() {
         </div>
         <Reveal><p className="price-note">Launch pricing applies to your first 6 months. Cancel any time — no questions asked.</p></Reveal>
       </div>
-      <WaveDivider fromColor="#111B2E" toColor="#060D1A" variant="ripple"/>
+      <WaveDivider toColor="#060D1A" variant="ripple"/>
     </section>
   );
 }
 
 /* ═══════════════════════════════
-   WHY FINOS
+   WHY FINOS — with comparison
 ═══════════════════════════════ */
 function WhyFinOS() {
   return (
@@ -642,6 +587,23 @@ function WhyFinOS() {
             <h2 className="why-h2">Most Indians earn well.<br/><span className="gold-text">Few invest right.</span></h2>
             <p className="why-p">We kept seeing the same pattern — smart, employed people with savings sitting idle because finance felt complicated. Advisors are expensive. Spreadsheets are tedious. Apps are shallow.</p>
             <p className="why-p">FinOS is what we wished existed. A tool that understands your income, your goals, India's rules — and tells you what to do next, clearly.</p>
+
+            {/* Before/After comparison strip */}
+            <div className="compare-strip">
+              <div className="compare-col compare-without">
+                <div className="compare-head">Without FinOS</div>
+                <div className="compare-row"><X size={13}/>Savings idle in a bank account</div>
+                <div className="compare-row"><X size={13}/>No idea how taxes actually work</div>
+                <div className="compare-row"><X size={13}/>Guessing at every big decision</div>
+              </div>
+              <div className="compare-col compare-with">
+                <div className="compare-head compare-head-g">With FinOS</div>
+                <div className="compare-row compare-row-g"><Check size={13}/>Money allocated with a clear plan</div>
+                <div className="compare-row compare-row-g"><Check size={13}/>Tax regime optimised automatically</div>
+                <div className="compare-row compare-row-g"><Check size={13}/>AI models the decision before you make it</div>
+              </div>
+            </div>
+
             <Link to="/register" className="btn-gold btn-lg" style={{marginTop:"28px",display:"inline-flex"}}>Try it free <ArrowRight size={15}/></Link>
           </Reveal>
           <div className="why-cards">
@@ -651,16 +613,63 @@ function WhyFinOS() {
               {e:"🧾",s:"₹40K+",l:"Average tax overpayment annually due to choosing the wrong tax regime"},
             ].map(({e,s,l},i)=>(
               <Reveal key={s} delay={i*75}>
-                <div className="why-card">
-                  <span className="why-ic">{e}</span>
-                  <div><div className="why-stat">{s}</div><div className="why-lbl">{l}</div></div>
-                </div>
+                <div className="why-card"><span className="why-ic">{e}</span><div><div className="why-stat">{s}</div><div className="why-lbl">{l}</div></div></div>
               </Reveal>
             ))}
           </div>
         </div>
       </div>
-      <WaveDivider fromColor="#060D1A" toColor="#101828" variant="peak"/>
+      <WaveDivider toColor="#101828" variant="peak"/>
+    </section>
+  );
+}
+
+/* ═══════════════════════════════
+   FAQ — new section
+═══════════════════════════════ */
+const FAQS = [
+  { q:"Is my financial data actually safe?", a:"Yes. We use bank-grade encryption for all data in transit and at rest. We never sell your data, and bank linking (when live) uses RBI-licensed Account Aggregators — the same framework banks use to share data with each other. You can delete your account and all data anytime." },
+  { q:"Is the free plan really free forever?", a:"Yes, genuinely. No trial period, no credit card required, no auto-charge after 14 days. The Free plan includes the Salary Allocator, AI Advisor, Financial Health Score, and Net Worth Dashboard — permanently, at ₹0." },
+  { q:"How is the AI advisor different from ChatGPT?", a:"FinBot is trained specifically on Indian financial rules — Section 80C, HRA exemptions, old vs new tax regime, SEBI-registered fund categories. It also has context on your actual income, goals, and existing investments, so advice is personalised, not generic." },
+  { q:"Can I cancel my paid plan anytime?", a:"Yes. Cancel anytime from your account settings — no phone calls, no retention forms. You keep access until the end of your billing period, and we don't charge cancellation fees." },
+  { q:"Do I need to link my bank account to use FinOS?", a:"No. Bank linking is optional and currently rolling out. You can use the Salary Allocator, AI Advisor, and most tools by simply entering your numbers manually — nothing is gated behind bank access." },
+  { q:"Is this financial advice or just educational content?", a:"FinOS provides educational information based on your data and general financial principles — it is not personalised investment advice from a SEBI-registered advisor. For investment decisions, we always recommend doing your own research or consulting a registered advisor." },
+];
+
+function FAQItem({ q, a, isOpen, onClick }) {
+  return (
+    <div className={`faq-item ${isOpen ? "faq-open" : ""}`}>
+      <button className="faq-q" onClick={onClick} aria-expanded={isOpen}>
+        <span>{q}</span>
+        <span className="faq-icon">{isOpen ? <Minus size={16}/> : <Plus size={16}/>}</span>
+      </button>
+      <div className="faq-a-wrap" style={{ maxHeight: isOpen ? "200px" : "0px" }}>
+        <p className="faq-a">{a}</p>
+      </div>
+    </div>
+  );
+}
+
+function FAQ() {
+  const [openIdx, setOpenIdx] = useState(0);
+  return (
+    <section id="faq" className="sec" style={{background:"#101828"}}>
+      <div className="C">
+        <Reveal>
+          <div className="sec-hd">
+            <div className="eyebrow">Questions, answered</div>
+            <h2 className="sec-h2">Before you sign up,<br/>here's what people ask.</h2>
+          </div>
+        </Reveal>
+        <Reveal delay={60}>
+          <div className="faq-list">
+            {FAQS.map((f, i) => (
+              <FAQItem key={f.q} q={f.q} a={f.a} isOpen={openIdx === i} onClick={() => setOpenIdx(openIdx === i ? -1 : i)} />
+            ))}
+          </div>
+        </Reveal>
+      </div>
+      <WaveDivider toColor="#101828" variant="ripple"/>
     </section>
   );
 }
@@ -704,7 +713,7 @@ function Footer() {
           <div>
             <div className="ft-col-h">Product</div>
             <ul className="ft-links">
-              {[["Features","#features"],["Pricing","#pricing"],["How it works","#how"],["Sign up free","/register"]].map(([l,h])=>(
+              {[["Features","#features"],["Pricing","#pricing"],["How it works","#how"],["FAQ","#faq"],["Sign up free","/register"]].map(([l,h])=>(
                 <li key={l}>{h.startsWith("#")?<a href={h}>{l}</a>:<Link to={h}>{l}</Link>}</li>
               ))}
             </ul>
@@ -737,7 +746,6 @@ const CSS = `
 html { scroll-behavior:smooth; font-size:16px; }
 body { overflow-x:hidden; }
 
-/* Variables */
 :root {
   --g:#F5A623; --gd:#E09515; --ga:rgba(245,166,35,0.12); --gb:rgba(245,166,35,0.22);
   --b:#3B7BFF; --bd:#2563EB; --ba:rgba(59,123,255,0.12);
@@ -749,19 +757,20 @@ body { overflow-x:hidden; }
 
 .lp { background:#0B1120; color:var(--w); font-family:'Inter',sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden; min-height:100vh; }
 
-/* Progress shimmer */
 @keyframes shimmer { 0%{background-position:0% 50%} 100%{background-position:200% 50%} }
 
-/* Reveal */
-.rv { opacity:0; transform:translateY(20px); transition:opacity 0.6s cubic-bezier(.16,1,.3,1),transform 0.6s cubic-bezier(.16,1,.3,1); }
-.rv-in { opacity:1; transform:translateY(0); }
+/* ─ Wave divider (canvas, animated) ─ */
+.wave-divider { position:relative; height:64px; margin-top:-1px; margin-bottom:-1px; overflow:hidden; }
+.wave-canvas { position:absolute; inset:0; width:100%; height:100%; display:block; }
 
-/* Typewriter */
+.rv { opacity:0; transform:translateY(20px); transition:opacity 0.6s cubic-bezier(.16,1,.3,1),transform 0.6s cubic-bezier(.16,1,.3,1); width:100%; display:flex; flex-direction:column; align-items:inherit; }
+.rv-in { opacity:1; transform:translateY(0); }
+.cta-in .rv, .sec-hd { align-items:center; }
+
 .tw { color:var(--g); }
 .tw-c { display:inline-block; width:3px; height:0.82em; background:var(--g); margin-left:2px; vertical-align:middle; border-radius:1px; animation:blink 1s step-end infinite; }
 @keyframes blink { 50%{opacity:0} }
 
-/* Buttons */
 .btn-gold { display:inline-flex; align-items:center; gap:8px; background:var(--g); color:#0B1120; font-family:'Sora',sans-serif; font-weight:700; border:none; cursor:pointer; border-radius:var(--rs); text-decoration:none; transition:all 0.18s; white-space:nowrap; }
 .btn-gold:hover { background:var(--gd); transform:translateY(-2px); box-shadow:0 10px 32px rgba(245,166,35,0.32); }
 .btn-ghost { display:inline-flex; align-items:center; gap:8px; background:rgba(255,255,255,0.05); color:var(--w); border:1px solid var(--br); font-weight:600; cursor:pointer; border-radius:var(--rs); text-decoration:none; transition:all 0.18s; white-space:nowrap; }
@@ -770,7 +779,6 @@ body { overflow-x:hidden; }
 .btn-lg { font-size:15px; padding:13px 24px; }
 .btn-xl { font-size:17px; padding:15px 38px; border-radius:var(--r); }
 
-/* Layout */
 .C { max-width:1200px; margin:0 auto; padding:0 24px; width:100%; }
 .C-full { max-width:1200px; margin:0 auto; padding:0 24px; width:100%; }
 .sec { padding:88px 0 72px; position:relative; }
@@ -784,20 +792,20 @@ body { overflow-x:hidden; }
 .tag-bl { background:var(--ba); color:#93B4FF; border:1px solid rgba(59,123,255,0.22); }
 .tag-gd { background:var(--ga); color:var(--g); border:1px solid var(--gb); }
 
-/* Nav */
+/* ─ NAV — mobile fix: space-between forces hamburger to far right ─ */
 .nav { position:fixed; top:0; inset-inline:0; z-index:100; transition:all 0.3s; border-bottom:1px solid transparent; }
 .nav-sc { background:rgba(11,17,32,0.96); backdrop-filter:blur(20px); border-color:var(--br); }
-.nav-in { max-width:1200px; margin:0 auto; padding:0 24px; height:64px; display:flex; align-items:center; gap:32px; }
+.nav-in { max-width:1200px; margin:0 auto; padding:0 24px; height:64px; display:flex; align-items:center; justify-content:space-between; gap:20px; }
 .nav-brand { display:flex; align-items:center; gap:10px; font-family:'Sora',sans-serif; font-size:20px; font-weight:800; color:var(--w); text-decoration:none; flex-shrink:0; }
-.nav-links { display:flex; gap:28px; flex:1; }
-.nav-lnk { font-size:14px; color:var(--mu); text-decoration:none; font-weight:500; transition:color 0.18s; position:relative; padding-bottom:2px; }
+.nav-links { display:flex; gap:26px; flex:1; justify-content:center; }
+.nav-lnk { font-size:14px; color:var(--mu); text-decoration:none; font-weight:500; transition:color 0.18s; position:relative; padding-bottom:2px; white-space:nowrap; }
 .nav-lnk::after { content:''; position:absolute; bottom:0; left:0; width:0; height:1px; background:var(--g); transition:width 0.2s; }
 .nav-lnk:hover { color:var(--w); }
 .nav-lnk:hover::after { width:100%; }
-.nav-right { display:flex; align-items:center; gap:12px; }
+.nav-right { display:flex; align-items:center; gap:12px; flex-shrink:0; }
 .nav-si { font-size:14px; font-weight:600; color:var(--mu); text-decoration:none; transition:color 0.18s; }
 .nav-si:hover { color:var(--w); }
-.hb { display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:4px; }
+.hb { display:none; flex-direction:column; gap:5px; background:none; border:none; cursor:pointer; padding:6px; flex-shrink:0; margin-left:auto; }
 .hb span { display:block; width:22px; height:2px; background:var(--w); border-radius:2px; transition:all 0.25s; transform-origin:center; }
 .hb .o:nth-child(1) { transform:translateY(7px) rotate(45deg); }
 .hb .m.o { opacity:0; }
@@ -807,7 +815,15 @@ body { overflow-x:hidden; }
 .mob-lnk:hover { color:var(--w); }
 .mob-ctas { display:flex; gap:10px; margin-top:8px; }
 
-/* Hero */
+/* ─ Mobile sticky CTA ─ */
+.mcta { position:fixed; bottom:-100px; left:0; right:0; z-index:90; background:rgba(11,17,32,0.97); backdrop-filter:blur(16px); border-top:1px solid var(--br); padding:12px 18px; display:none; align-items:center; justify-content:space-between; gap:12px; transition:bottom 0.3s cubic-bezier(.16,1,.3,1); box-shadow:0 -8px 30px rgba(0,0,0,0.4); }
+.mcta-show { bottom:0; }
+.mcta-text { display:flex; flex-direction:column; line-height:1.3; }
+.mcta-text strong { font-size:14px; color:var(--w); font-family:'Sora',sans-serif; }
+.mcta-text span { font-size:11px; color:var(--mu); }
+.mcta-btn { flex-shrink:0; }
+
+/* ─ Hero ─ */
 .hero { min-height:100vh; display:flex; flex-direction:column; padding-top:64px; position:relative; background:#0B1120; overflow:hidden; }
 .hero-orb { position:absolute; border-radius:50%; pointer-events:none; }
 .hero-o1 { width:560px; height:560px; background:rgba(59,123,255,0.07); top:-180px; left:-200px; filter:blur(90px); animation:orb1 15s ease-in-out infinite; }
@@ -827,7 +843,6 @@ body { overflow-x:hidden; }
 .trust-item { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--mu); }
 .trust-item svg { color:var(--gr); flex-shrink:0; }
 
-/* Hero card */
 .hcard-wrap { position:relative; display:flex; flex-direction:column; gap:12px; }
 .hcard-notif { display:inline-flex; align-items:center; gap:7px; background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.22); padding:7px 14px; border-radius:100px; font-size:12px; font-weight:600; color:var(--gr); width:fit-content; animation:floatup 3.5s ease-in-out infinite; align-self:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .hcard-notif-dot { width:7px; height:7px; border-radius:50%; background:var(--gr); flex-shrink:0; animation:bdot 2s infinite; }
@@ -852,14 +867,12 @@ body { overflow-x:hidden; }
 .hcard-chat-q { font-size:12px; color:#93B4FF; background:rgba(59,123,255,0.1); border:1px solid rgba(59,123,255,0.18); padding:8px 11px; border-radius:8px 8px 2px 8px; text-align:right; }
 .hcard-chat-a { font-size:12px; color:var(--mu); line-height:1.55; }
 
-/* Stats bar */
 .stats-bar { display:grid; grid-template-columns:repeat(4,1fr); border-top:1px solid var(--br); position:relative; z-index:1; }
 .stat { padding:26px 0; text-align:center; border-right:1px solid var(--br); }
 .stat:last-child { border-right:none; }
 .stat-v { font-family:'Sora',sans-serif; font-size:28px; font-weight:800; color:var(--g); margin-bottom:4px; }
 .stat-l { font-size:12px; color:var(--mu); }
 
-/* Mockup */
 .mock { background:#1A2235; border:1px solid var(--br); border-radius:14px; overflow:hidden; box-shadow:0 32px 80px rgba(0,0,0,0.55); }
 .mock-bar { display:flex; align-items:center; gap:10px; background:#1E2A42; padding:10px 14px; border-bottom:1px solid var(--br); }
 .mock-dots { display:flex; gap:5px; }
@@ -901,7 +914,6 @@ body { overflow-x:hidden; }
 .mock-send-btn { background:var(--b); color:#fff; font-size:11px; font-weight:700; padding:8px 13px; border:none; border-radius:7px; cursor:pointer; white-space:nowrap; transition:background 0.18s; }
 .mock-send-btn:hover { background:var(--bd); }
 
-/* Features */
 .feats-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; align-items:stretch; }
 .feat { background:var(--card); border:1px solid var(--br); border-radius:var(--r); padding:20px; transition:all 0.22s; position:relative; overflow:hidden; height:100%; display:flex; flex-direction:column; }
 .feat::before { content:''; position:absolute; inset:0; background:linear-gradient(135deg,rgba(245,166,35,0.05) 0%,transparent 55%); opacity:0; transition:opacity 0.28s; pointer-events:none; }
@@ -914,7 +926,6 @@ body { overflow-x:hidden; }
 .feat-title { font-weight:700; font-size:13px; color:var(--w); margin-bottom:7px; line-height:1.3; }
 .feat-desc { font-size:12px; color:var(--mu); line-height:1.65; flex:1; }
 
-/* How it works — fixed step numbers */
 .how-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:0; position:relative; }
 .how-grid::before { content:''; position:absolute; top:36px; left:calc(12.5%); right:calc(12.5%); height:1px; background:linear-gradient(90deg,transparent,rgba(245,166,35,0.25),rgba(245,166,35,0.25),transparent); }
 .how-card { padding:32px 20px; position:relative; }
@@ -924,7 +935,6 @@ body { overflow-x:hidden; }
 .how-desc { font-size:13px; color:var(--mu); line-height:1.65; margin-bottom:10px; }
 .how-note { font-size:12px; color:rgba(245,166,35,0.68); line-height:1.55; font-style:italic; }
 
-/* Pricing — equal height */
 .price-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; align-items:stretch; }
 .plan { background:var(--card); border:1px solid var(--br); border-radius:var(--r); padding:26px; display:flex; flex-direction:column; position:relative; overflow:hidden; height:100%; transition:transform 0.2s,box-shadow 0.2s; }
 .plan:hover { transform:translateY(-3px); box-shadow:0 20px 48px rgba(0,0,0,0.4); }
@@ -957,7 +967,6 @@ body { overflow-x:hidden; }
 .plan-cta-gold:hover { background:var(--gd); transform:translateY(-1px); box-shadow:0 8px 24px rgba(245,166,35,0.3); }
 .price-note { text-align:center; font-size:13px; color:var(--mu); margin-top:24px; }
 
-/* Why */
 .why-grid { display:grid; grid-template-columns:1fr 1fr; gap:64px; align-items:center; }
 .why-h2 { font-family:'Sora',sans-serif; font-size:clamp(26px,3.2vw,42px); font-weight:800; line-height:1.2; color:var(--w); margin-bottom:18px; }
 .why-p { font-size:15px; color:var(--mu); line-height:1.75; margin-bottom:14px; }
@@ -968,7 +977,29 @@ body { overflow-x:hidden; }
 .why-stat { font-family:'Sora',sans-serif; font-size:24px; font-weight:800; color:var(--g); margin-bottom:2px; }
 .why-lbl { font-size:12px; color:var(--mu); line-height:1.5; }
 
-/* CTA */
+/* Compare strip */
+.compare-strip { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:24px; }
+.compare-col { border-radius:var(--r); padding:16px 18px; }
+.compare-without { background:rgba(239,68,68,0.04); border:1px solid rgba(239,68,68,0.15); }
+.compare-with { background:rgba(16,185,129,0.04); border:1px solid rgba(16,185,129,0.18); }
+.compare-head { font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; color:rgba(239,68,68,0.8); margin-bottom:12px; }
+.compare-head-g { color:var(--gr); }
+.compare-row { display:flex; align-items:flex-start; gap:7px; font-size:12px; color:var(--mu); line-height:1.5; margin-bottom:9px; }
+.compare-row svg { color:rgba(239,68,68,0.6); flex-shrink:0; margin-top:1px; }
+.compare-row-g svg { color:var(--gr); }
+.compare-row-g { color:rgba(238,243,255,0.85); }
+
+/* FAQ */
+.faq-list { max-width:760px; margin:0 auto; display:flex; flex-direction:column; gap:10px; }
+.faq-item { background:var(--card); border:1px solid var(--br); border-radius:var(--r); overflow:hidden; transition:border-color 0.2s; }
+.faq-open { border-color:rgba(245,166,35,0.3); }
+.faq-q { width:100%; display:flex; align-items:center; justify-content:space-between; gap:16px; background:none; border:none; cursor:pointer; padding:18px 20px; text-align:left; font-size:14px; font-weight:600; color:var(--w); font-family:'Inter',sans-serif; }
+.faq-icon { color:var(--g); flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.faq-a-wrap { overflow:hidden; transition:max-height 0.3s ease; }
+.faq-a { padding:0 20px 18px; font-size:13px; color:var(--mu); line-height:1.7; }
+
+
+
 .cta-sec { padding:96px 0; background:#101828; border-top:1px solid var(--br); position:relative; overflow:hidden; }
 .cta-glow { position:absolute; top:-240px; left:50%; transform:translateX(-50%); width:800px; height:480px; background:radial-gradient(ellipse,rgba(245,166,35,0.08) 0%,transparent 65%); pointer-events:none; }
 .cta-in { text-align:center; display:flex; flex-direction:column; align-items:center; position:relative; z-index:1; }
@@ -979,8 +1010,7 @@ body { overflow-x:hidden; }
 .cta-ti { display:flex; align-items:center; gap:5px; font-size:13px; color:var(--mu); }
 .cta-ti svg { color:var(--gr); }
 
-/* Footer */
-.ft { background:#060D1A; border-top:1px solid var(--br); padding:60px 0 28px; }
+.ft { background:#060D1A; border-top:1px solid var(--br); padding:60px 0 88px; }
 .ft-grid { display:grid; grid-template-columns:2fr 1fr 1fr; gap:48px; margin-bottom:48px; }
 .ft-brand { display:flex; align-items:center; gap:8px; font-family:'Sora',sans-serif; font-size:18px; font-weight:800; color:var(--w); margin-bottom:12px; }
 .ft-tag { font-size:13px; color:var(--mu); line-height:1.65; }
@@ -992,7 +1022,34 @@ body { overflow-x:hidden; }
 .ft-status { display:flex; align-items:center; gap:7px; }
 .st-dot { width:7px; height:7px; border-radius:50%; background:var(--gr); animation:bdot 2s infinite; }
 
-/* Responsive */
+/* ─ Quick calculator ─ */
+.calc-card { display:grid; grid-template-columns:1fr 1fr; gap:0; background:var(--card); border:1px solid var(--br); border-radius:18px; overflow:hidden; }
+.calc-left { padding:36px 38px; display:flex; flex-direction:column; justify-content:center; }
+.calc-h3 { font-family:'Sora',sans-serif; font-size:24px; font-weight:800; color:var(--w); margin-bottom:10px; line-height:1.25; }
+.calc-p { font-size:13px; color:var(--mu); line-height:1.6; margin-bottom:26px; }
+.calc-slider-wrap { display:flex; flex-direction:column; gap:10px; }
+.calc-slider-label { display:flex; justify-content:space-between; align-items:baseline; font-size:13px; color:var(--mu); }
+.calc-slider-val { font-family:'Sora',sans-serif; font-size:20px; font-weight:800; color:var(--g); }
+.calc-slider { width:100%; height:6px; border-radius:3px; background:rgba(255,255,255,0.1); appearance:none; outline:none; cursor:pointer; }
+.calc-slider::-webkit-slider-thumb { appearance:none; width:20px; height:20px; border-radius:50%; background:var(--g); border:3px solid #0B1120; box-shadow:0 2px 8px rgba(245,166,35,0.4); cursor:pointer; transition:transform 0.15s; }
+.calc-slider::-webkit-slider-thumb:hover { transform:scale(1.15); }
+.calc-slider::-moz-range-thumb { width:20px; height:20px; border-radius:50%; background:var(--g); border:3px solid #0B1120; cursor:pointer; }
+.calc-right { background:linear-gradient(135deg,rgba(245,166,35,0.06),rgba(59,123,255,0.04)); padding:36px 38px; display:flex; flex-direction:column; gap:16px; border-left:1px solid var(--br); }
+.calc-result-row { display:flex; justify-content:space-between; align-items:baseline; padding-bottom:14px; border-bottom:1px solid var(--br); }
+.calc-result-row--highlight { border-bottom:none; padding-bottom:0; }
+.calc-result-lbl { font-size:12px; color:var(--mu); }
+.calc-result-val { font-family:'Sora',sans-serif; font-size:20px; font-weight:800; color:var(--w); }
+.calc-result-val--sm { font-size:17px; }
+.calc-result-val--gold { font-size:26px; color:var(--g); }
+.calc-disclaimer { font-size:10px; color:rgba(122,133,154,0.6); line-height:1.5; }
+.calc-cta { margin-top:4px; width:100%; justify-content:center; }
+@media (max-width:768px) {
+  .calc-card { grid-template-columns:1fr; }
+  .calc-right { border-left:none; border-top:1px solid var(--br); }
+  .calc-left, .calc-right { padding:26px 22px; }
+}
+
+
 @media (max-width:1100px) {
   .feats-grid { grid-template-columns:repeat(2,1fr); }
   .how-grid { grid-template-columns:repeat(2,1fr); }
@@ -1001,6 +1058,7 @@ body { overflow-x:hidden; }
 @media (max-width:768px) {
   .nav-links,.nav-right { display:none; }
   .hb { display:flex; }
+  .nav-in { justify-content:space-between; }
   .hero-in { grid-template-columns:1fr; padding-top:48px; padding-bottom:36px; gap:36px; }
   .hero-vis { order:-1; }
   .hero-sub { max-width:100%; }
@@ -1013,11 +1071,16 @@ body { overflow-x:hidden; }
   .how-card { border-top:1px solid var(--br); padding:24px 16px; }
   .price-grid { grid-template-columns:1fr; }
   .why-grid { grid-template-columns:1fr; gap:36px; }
+  .compare-strip { grid-template-columns:1fr; }
   .ft-grid { grid-template-columns:1fr; gap:28px; }
+  .ft { padding-bottom:100px; }
   .hero-acts { flex-direction:column; }
   .btn-lg,.btn-xl { width:100%; justify-content:center; }
   .mock-body { grid-template-columns:88px 1fr; }
   .hcard-notif { font-size:11px; }
+  .mcta { display:flex; }
+  .faq-q { font-size:13px; padding:16px; }
+  .sec { padding:64px 0 56px; }
 }
 @media (prefers-reduced-motion:reduce) {
   .rv { transition:none; opacity:1; transform:none; }
@@ -1038,8 +1101,10 @@ export default function LandingPage() {
         <HowItWorks/>
         <Pricing/>
         <WhyFinOS/>
+        <FAQ/>
         <CTA/>
         <Footer/>
+        <MobileStickyCTA/>
       </div>
     </>
   );
