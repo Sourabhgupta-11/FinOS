@@ -18,14 +18,39 @@ export default function ContactUsPage() {
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // In a real application, this would send the form data to the backend
-    console.log("Contact form submitted:", form);
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+
+  try {
+    const res = await fetch(
+      `${import.meta.env.VITE_API_URL}/api/contact`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      }
+    );
+
+    if (!res.ok) {
+      throw new Error("Failed to send");
+    }
+
     setSubmitted(true);
-    setForm({ name: "", email: "", subject: "", message: "" });
+    setForm({
+      name: "",
+      email: "",
+      subject: "",
+      message: "",
+    });
+
     setTimeout(() => setSubmitted(false), 5000);
-  };
+  } catch (err) {
+    console.error(err);
+    alert("Failed to send message");
+  }
+};
 
   const handleBack = () => {
     if (window.history.length > 1) {
