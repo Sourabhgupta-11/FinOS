@@ -6,7 +6,7 @@ const compression = require("compression");
 const morgan = require("morgan");
 const rateLimit = require("express-rate-limit");
 const passport = require("passport");
-
+const contactRoutes = require("./routes/contact");
 const authRoutes = require("./routes/auth");
 const authExtendedRoutes = require("./routes/authExtended");
 const googleAuthRoutes = require("./routes/googleAuth");
@@ -82,6 +82,9 @@ app.use("/api/email", emailRoutes);
 app.use("/api/subscription", subscriptionRoutes);
 app.use("/api/setu", setuRoutes);
 app.use("/api/launch", launchRoutes);
+
+
+app.use("/api/contact", contactRoutes);
 
 // ── All authenticated users ───────────────────────────────────────────────────
 app.use("/api/auth", authenticate, authExtendedRoutes);
